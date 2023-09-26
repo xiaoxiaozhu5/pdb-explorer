@@ -9,8 +9,8 @@ class CDiaInfo
 public:
 	CString GetSymbolInfo(IDiaDataSource* spDataSource, const PDBSYMBOL& Symbol)
 	{
-		CString sRTF;
-		_AddHeader(sRTF);
+		//CString sRTF;
+		_AddHeader(m_sRTF);
 		_ATLTRY
 		{
 			HRESULT Hr = S_OK;
@@ -93,15 +93,15 @@ public:
 			if (dwSymTag < _countof(pstrSymTags)) sType = pstrSymTags[dwSymTag];
 			if (bIsFunction) sType = _T("Function");
 			if (bIsConstructor) sType = _T("Constructor / Destructor");
-			_AddTitle(sRTF, bstrTitle.m_str, sType);
+			_AddTitle(m_sRTF, bstrTitle.m_str, sType);
 
 			CComBSTR bstrUndecorated;
 			spSymbol->get_undecoratedNameEx(0, &bstrUndecorated);
 			if (bstrUndecorated.Length() > 0)
 			{
-				sRTF += _T("\\fs22\\b Signature:\\par\\fs24\\b0 ");
-				sRTF += bstrUndecorated;
-				sRTF += _T(" \\par\\par ");
+				m_sRTF += _T("\\fs22\\b Signature:\\par\\fs24\\b0 ");
+				m_sRTF += bstrUndecorated;
+				m_sRTF += _T(" \\par\\par ");
 			}
 
 			DWORD dwDataKind = 0;
@@ -112,14 +112,14 @@ public:
 			};
 			CString sDataKind;
 			if (dwDataKind < _countof(pstrDataKinds)) sDataKind = pstrDataKinds[dwDataKind];
-			if (Hr == S_OK) _AddTableEntry(sRTF, _T("Data Kind"), sDataKind);
+			if (Hr == S_OK) _AddTableEntry(m_sRTF, _T("Data Kind"), sDataKind);
 
 			GUID guid = {0};
 			spSymbol->get_guid(&guid);
 			if (guid != GUID_NULL)
 			{
 				CComBSTR bstrGUID(guid);
-				_AddTableEntry(sRTF, _T("GUID"), bstrGUID.m_str);
+				_AddTableEntry(m_sRTF, _T("GUID"), bstrGUID.m_str);
 			}
 
 			DWORD dwLanguage = 0;
@@ -130,22 +130,22 @@ public:
 			};
 			CString sLanguage;
 			if (dwLanguage < _countof(pstrLanguages)) sLanguage = pstrLanguages[dwLanguage];
-			if (Hr == S_OK) _AddTableEntry(sRTF, _T("Language"), sLanguage);
+			if (Hr == S_OK) _AddTableEntry(m_sRTF, _T("Language"), sLanguage);
 
 			CComBSTR bstrSourceFile;
 			spSymbol->get_sourceFileName(&bstrSourceFile);
 			if (bstrSourceFile.m_str == NULL) spSymbol->get_symbolsFileName(&bstrSourceFile);
-			_AddTableEntry(sRTF, _T("Source File"), bstrSourceFile.m_str);
+			_AddTableEntry(m_sRTF, _T("Source File"), bstrSourceFile.m_str);
 
 			CComBSTR bstrCompiler;
 			spSymbol->get_compilerName(&bstrCompiler);
-			_AddTableEntry(sRTF, _T("Compiler"), bstrCompiler.m_str);
+			_AddTableEntry(m_sRTF, _T("Compiler"), bstrCompiler.m_str);
 
 			CComVariant vValue;
 			Hr = spSymbol->get_value(&vValue);
 			if (Hr == S_OK)
 			{
-				if (SUCCEEDED(vValue.ChangeType(VT_BSTR))) _AddTableEntry(sRTF, _T("Value"), vValue.bstrVal);
+				if (SUCCEEDED(vValue.ChangeType(VT_BSTR))) _AddTableEntry(m_sRTF, _T("Value"), vValue.bstrVal);
 			}
 
 			ULONG nTypes = 0;
@@ -160,7 +160,7 @@ public:
 				sTypes += bstrName;
 				ppTypeSymbols[i]->Release();
 			}
-			_AddTableEntry(sRTF, _T("Type"), sTypes);
+			_AddTableEntry(m_sRTF, _T("Type"), sTypes);
 
 			IDiaEnumSymbols* spChildren = NULL;
 			spSymbol->findChildren(SymTagNull, NULL, 0, &spChildren);
@@ -169,7 +169,7 @@ public:
 				ULONG celt = 0;
 				CString sChildren;
 				IDiaSymbol* spChildSymbol = NULL;
-				while (spChildren->Next(1, &spChildSymbol, &celt), celt > 0)
+				while (SUCCEEDED(spChildren->Next(1, &spChildSymbol, &celt)) && celt == 1)
 				{
 					DWORD dwSymTag = 0;
 					spChildSymbol->get_symTag(&dwSymTag);
@@ -180,11 +180,11 @@ public:
 					sChildren += bstrName;
 					spChildSymbol->Release();
 				}
-				_AddTableEntry(sRTF, _T("Lex"), sChildren);
+				_AddTableEntry(m_sRTF, _T("Lex"), sChildren);
 				spChildren->Release();
 			}
 
-			if (SUCCEEDED(spSymbol->findChildren(SymTagUDT, NULL, 0, &spChildren)))
+			if (SUCCEEDED(spSymbol->findChildren(SymTagNull, NULL, 0, &spChildren)))
 			{
 				ULONG celt = 0;
 				IDiaSymbol* spChildSymbol = NULL;
@@ -202,7 +202,7 @@ public:
 			{
 				CComBSTR bstrName;
 				spBaseTypeSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Base Type"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Base Type"), bstrName.m_str);
 			}
 
 			IDiaSymbol* spObjectTypeSymbol = NULL;
@@ -211,7 +211,7 @@ public:
 			{
 				CComBSTR bstrName;
 				spObjectTypeSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Object Type"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Object Type"), bstrName.m_str);
 			}
 
 			IDiaSymbol* spContainerSymbol = NULL;
@@ -220,7 +220,7 @@ public:
 			{
 				CComBSTR bstrName;
 				spContainerSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Parent Type"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Parent Type"), bstrName.m_str);
 			}
 
 			IDiaSymbol* spBaseClassSymbol = NULL;
@@ -229,7 +229,7 @@ public:
 			{
 				CComBSTR bstrName;
 				spBaseClassSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Base Class"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Base Class"), bstrName.m_str);
 			}
 
 			IDiaSymbol* spBaseShapeSymbol = NULL;
@@ -238,7 +238,7 @@ public:
 			{
 				CComBSTR bstrName;
 				spBaseShapeSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Base Class"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Base Class"), bstrName.m_str);
 			}
 
 			IDiaSymbol* spClassParentSymbol = NULL;
@@ -247,7 +247,7 @@ public:
 			{
 				CComBSTR bstrName;
 				spClassParentSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Class Parent"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Class Parent"), bstrName.m_str);
 			}
 
 			IDiaSymbol* spLexParentSymbol = NULL;
@@ -256,14 +256,14 @@ public:
 			{
 				CComBSTR bstrName;
 				spLexParentSymbol->get_name(&bstrName);
-				_AddTableEntry(sRTF, _T("Owner"), bstrName.m_str);
+				_AddTableEntry(m_sRTF, _T("Owner"), bstrName.m_str);
 			}
 		}
 		_ATLCATCHALL()
 		{
 		}
-		_AddFooter(sRTF);
-		return sRTF;
+		_AddFooter(m_sRTF);
+		return m_sRTF;
 	}
 
 	CString GetEmptyInfo(CTreeViewCtrl& ctrlTree) const
@@ -308,14 +308,32 @@ public:
 		sRTF += sTemp;
 	}
 
+	void _AddContent(CString& sRTF, CString sContent)
+	{
+		sRTF += _T(" \\fs20 ");
+		sRTF += sContent;
+	}
+
+	void _AddContent2(CString& sRtf, const wchar_t* format, ...)
+	{
+		const int tmp_len = MAX_PATH;
+		WCHAR tmp[tmp_len] = {0};
+		va_list args;
+		va_start(args, format);
+		_vsnwprintf_s(tmp, tmp_len, tmp_len, format, args);
+		_AddContent(sRtf, tmp);
+		va_end(args);
+	}
+
 private:
+
 	void PrintUdtKind(IDiaSymbol* pSymbol)
 	{
 		DWORD dwKind = 0;
 
 		if (pSymbol->get_udtKind(&dwKind) == S_OK)
 		{
-			wprintf(L"%s ", rgUdtKind[dwKind]);
+			_AddContent2(m_sRTF, L"%s ", rgUdtKind[dwKind]);
 		}
 	}
 
@@ -326,7 +344,7 @@ private:
 
 		if (pSymbol->get_name(&bstrName) != S_OK)
 		{
-			wprintf(L"(none)");
+			_AddContent(m_sRTF, L"(none)");
 			return;
 		}
 
@@ -334,12 +352,12 @@ private:
 		{
 			if (wcscmp(bstrName, bstrUndName) == 0)
 			{
-				wprintf(L"%s", bstrName);
+				_AddContent2(m_sRTF, L"%s", bstrName);
 			}
 
 			else
 			{
-				wprintf(L"%s(%s)", bstrUndName, bstrName);
+				_AddContent2(m_sRTF, L"%s(%s)", bstrUndName, bstrName);
 			}
 
 			SysFreeString(bstrUndName);
@@ -347,7 +365,7 @@ private:
 
 		else
 		{
-			wprintf(L"%s", bstrName);
+			_AddContent2(m_sRTF, L"%s", bstrName);
 		}
 
 		SysFreeString(bstrName);
@@ -359,13 +377,13 @@ private:
 		{
 		case VT_UI1:
 		case VT_I1:
-			wprintf(L" 0x%X", var.bVal);
+			_AddContent2(m_sRTF, L" 0x%X", var.bVal);
 			break;
 
 		case VT_I2:
 		case VT_UI2:
 		case VT_BOOL:
-			wprintf(L" 0x%X", var.iVal);
+			_AddContent2(m_sRTF, L" 0x%X", var.iVal);
 			break;
 
 		case VT_I4:
@@ -373,23 +391,23 @@ private:
 		case VT_INT:
 		case VT_UINT:
 		case VT_ERROR:
-			wprintf(L" 0x%X", var.lVal);
+			_AddContent2(m_sRTF, L" 0x%X", var.lVal);
 			break;
 
 		case VT_R4:
-			wprintf(L" %g", var.fltVal);
+			_AddContent2(m_sRTF, L" %g", var.fltVal);
 			break;
 
 		case VT_R8:
-			wprintf(L" %g", var.dblVal);
+			_AddContent2(m_sRTF, L" %g", var.dblVal);
 			break;
 
 		case VT_BSTR:
-			wprintf(L" \"%s\"", var.bstrVal);
+			_AddContent2(m_sRTF, L" \"%s\"", var.bstrVal);
 			break;
 
 		default:
-			wprintf(L" ??");
+			_AddContent(m_sRTF, L" ??");
 		}
 	}
 
@@ -400,13 +418,11 @@ private:
 
 		if (pSymbol->get_symTag(&dwTag) != S_OK)
 		{
-			wprintf(L"ERROR - PrintBound() get_symTag");
 			return;
 		}
 
 		if (pSymbol->get_locationType(&dwKind) != S_OK)
 		{
-			wprintf(L"ERROR - PrintBound() get_locationType");
 			return;
 		}
 
@@ -439,7 +455,7 @@ private:
 		{
 			// It must be a symbol in optimized code
 
-			wprintf(L"symbol in optmized code");
+			_AddContent(m_sRTF, L"symbol in optmized code");
 			return;
 		}
 
@@ -450,7 +466,7 @@ private:
 				(pSymbol->get_addressSection(&dwSect) == S_OK) &&
 				(pSymbol->get_addressOffset(&dwOff) == S_OK))
 			{
-				wprintf(L"%s, [%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
+				_AddContent2(m_sRTF, L"%s, [%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
 			}
 			break;
 
@@ -461,7 +477,7 @@ private:
 				(pSymbol->get_addressSection(&dwSect) == S_OK) &&
 				(pSymbol->get_addressOffset(&dwOff) == S_OK))
 			{
-				wprintf(L"%s, [%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
+				_AddContent2(m_sRTF, L"%s, [%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
 			}
 			break;
 
@@ -469,14 +485,14 @@ private:
 			if ((pSymbol->get_registerId(&dwReg) == S_OK) &&
 				(pSymbol->get_offset(&lOffset) == S_OK))
 			{
-				wprintf(L"%s Relative, [%08X]", SzNameC7Reg((USHORT)dwReg), lOffset);
+				_AddContent2(m_sRTF, L"%s Relative, [%08X]", SzNameC7Reg((USHORT)dwReg), lOffset);
 			}
 			break;
 
 		case LocIsThisRel:
 			if (pSymbol->get_offset(&lOffset) == S_OK)
 			{
-				wprintf(L"this+0x%X", lOffset);
+				_AddContent2(m_sRTF, L"this+0x%X", lOffset);
 			}
 			break;
 
@@ -485,26 +501,26 @@ private:
 				(pSymbol->get_bitPosition(&dwBitPos) == S_OK) &&
 				(pSymbol->get_length(&ulLen) == S_OK))
 			{
-				wprintf(L"this(bf)+0x%X:0x%X len(0x%X)", lOffset, dwBitPos, (ULONG)ulLen);
+				_AddContent2(m_sRTF, L"this(bf)+0x%X:0x%X len(0x%X)", lOffset, dwBitPos, (ULONG)ulLen);
 			}
 			break;
 
 		case LocIsEnregistered:
 			if (pSymbol->get_registerId(&dwReg) == S_OK)
 			{
-				wprintf(L"enregistered %s", SzNameC7Reg((USHORT)dwReg));
+				_AddContent2(m_sRTF, L"enregistered %s", SzNameC7Reg((USHORT)dwReg));
 			}
 			break;
 
 		case LocIsSlot:
 			if (pSymbol->get_slot(&dwSlot) == S_OK)
 			{
-				wprintf(L"%s, [%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwSlot);
+				_AddContent2(m_sRTF, L"%s, [%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwSlot);
 			}
 			break;
 
 		case LocIsConstant:
-			wprintf(L"constant");
+			_AddContent(m_sRTF, L"constant");
 
 			if (pSymbol->get_value(&vt) == S_OK)
 			{
@@ -517,7 +533,6 @@ private:
 			break;
 
 		default:
-			wprintf(L"Error - invalid location type: 0x%X", dwLocType);
 			break;
 		}
 	}
@@ -537,7 +552,6 @@ private:
 
 		if (pSymbol->get_symTag(&dwTag) != S_OK)
 		{
-			wprintf(L"ERROR - can't retrieve the symbol's SymTag\n");
 			return;
 		}
 
@@ -550,17 +564,17 @@ private:
 		{
 			if ((pSymbol->get_constType(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L"const ");
+				_AddContent(m_sRTF, L"const ");
 			}
 
 			if ((pSymbol->get_volatileType(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L"volatile ");
+				_AddContent(m_sRTF, L"volatile ");
 			}
 
 			if ((pSymbol->get_unalignedType(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L"__unaligned ");
+				_AddContent(m_sRTF, L"__unaligned ");
 			}
 		}
 
@@ -576,18 +590,17 @@ private:
 			break;
 
 		case SymTagEnum:
-			wprintf(L"enum ");
+			_AddContent(m_sRTF, L"enum ");
 			PrintName(pSymbol);
 			break;
 
 		case SymTagFunctionType:
-			wprintf(L"function ");
+			_AddContent(m_sRTF, L"function ");
 			break;
 
 		case SymTagPointerType:
 			if (pSymbol->get_type(&pBaseType) != S_OK)
 			{
-				wprintf(L"ERROR - SymTagPointerType get_type");
 				if (bstrName != NULL)
 				{
 					SysFreeString(bstrName);
@@ -600,27 +613,27 @@ private:
 
 			if ((pSymbol->get_reference(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L" &");
+				_AddContent(m_sRTF, L" &");
 			}
 
 			else
 			{
-				wprintf(L" *");
+				_AddContent(m_sRTF, L" *");
 			}
 
 			if ((pSymbol->get_constType(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L" const");
+				_AddContent(m_sRTF, L" const");
 			}
 
 			if ((pSymbol->get_volatileType(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L" volatile");
+				_AddContent(m_sRTF, L" volatile");
 			}
 
 			if ((pSymbol->get_unalignedType(&bSet) == S_OK) && bSet)
 			{
-				wprintf(L" __unaligned");
+				_AddContent(m_sRTF, L" __unaligned");
 			}
 			break;
 
@@ -638,13 +651,13 @@ private:
 						{
 							IDiaSymbol* pBound;
 
-							wprintf(L"[");
+							_AddContent(m_sRTF, L"[");
 
 							if (pSym->get_lowerBound(&pBound) == S_OK)
 							{
 								PrintBound(pBound);
 
-								wprintf(L"..");
+								_AddContent(m_sRTF, L"..");
 
 								pBound->Release();
 							}
@@ -661,7 +674,7 @@ private:
 							pSym->Release();
 							pSym = NULL;
 
-							wprintf(L"]");
+							_AddContent(m_sRTF, L"]");
 						}
 
 						pEnumSym->Release();
@@ -675,9 +688,9 @@ private:
 				{
 					while (SUCCEEDED(pEnumSym->Next(1, &pSym, &celt)) && (celt == 1))
 					{
-						wprintf(L"[");
+						_AddContent(m_sRTF, L"[");
 						PrintType(pSym);
-						wprintf(L"]");
+						_AddContent(m_sRTF, L"]");
 
 						pSym->Release();
 					}
@@ -693,7 +706,7 @@ private:
 
 					if (pSymbol->get_count(&dwCountElems) == S_OK)
 					{
-						wprintf(L"[0x%X]", dwCountElems);
+						_AddContent2(m_sRTF, L"[0x%X]", dwCountElems);
 					}
 
 					else if ((pSymbol->get_length(&ulLenArray) == S_OK) &&
@@ -701,12 +714,12 @@ private:
 					{
 						if (ulLenElem == 0)
 						{
-							wprintf(L"[0x%lX]", (ULONG)ulLenArray);
+							_AddContent2(m_sRTF, L"[0x%lX]", (ULONG)ulLenArray);
 						}
 
 						else
 						{
-							wprintf(L"[0x%lX]", (ULONG)ulLenArray / (ULONG)ulLenElem);
+							_AddContent2(m_sRTF, L"[0x%lX]", (ULONG)ulLenArray / (ULONG)ulLenElem);
 						}
 					}
 				}
@@ -716,7 +729,6 @@ private:
 
 			else
 			{
-				wprintf(L"ERROR - SymTagArrayType get_type\n");
 				if (bstrName != NULL)
 				{
 					SysFreeString(bstrName);
@@ -728,7 +740,6 @@ private:
 		case SymTagBaseType:
 			if (pSymbol->get_baseType(&dwInfo) != S_OK)
 			{
-				wprintf(L"SymTagBaseType get_baseType\n");
 				if (bstrName != NULL)
 				{
 					SysFreeString(bstrName);
@@ -739,7 +750,7 @@ private:
 			switch (dwInfo)
 			{
 			case btUInt:
-				wprintf(L"unsigned ");
+				_AddContent(m_sRTF, L"unsigned ");
 
 			// Fall through
 
@@ -749,22 +760,22 @@ private:
 				case 1:
 					if (dwInfo == btInt)
 					{
-						wprintf(L"signed ");
+						_AddContent(m_sRTF,L"signed ");
 					}
 
-					wprintf(L"char");
+					_AddContent(m_sRTF,L"char");
 					break;
 
 				case 2:
-					wprintf(L"short");
+					_AddContent(m_sRTF,L"short");
 					break;
 
 				case 4:
-					wprintf(L"int");
+					_AddContent(m_sRTF,L"int");
 					break;
 
 				case 8:
-					wprintf(L"__int64");
+					_AddContent(m_sRTF,L"__int64");
 					break;
 				}
 
@@ -775,11 +786,11 @@ private:
 				switch (ulLen)
 				{
 				case 4:
-					wprintf(L"float");
+					_AddContent(m_sRTF,L"float");
 					break;
 
 				case 8:
-					wprintf(L"double");
+					_AddContent(m_sRTF,L"double");
 					break;
 				}
 
@@ -792,7 +803,7 @@ private:
 				break;
 			}
 
-			wprintf(L"%s", rgBaseType[dwInfo]);
+			_AddContent2(m_sRTF, L"%s", rgBaseType[dwInfo]);
 			break;
 
 		case SymTagTypedef:
@@ -807,12 +818,12 @@ private:
 
 				if (pSymbol->get_oemId(&idOEM) == S_OK)
 				{
-					wprintf(L"OEMId = %X, ", idOEM);
+					_AddContent2(m_sRTF, L"OEMId = %X, ", idOEM);
 				}
 
 				if (pSymbol->get_oemSymbolId(&idOEMSym) == S_OK)
 				{
-					wprintf(L"SymbolId = %X, ", idOEMSym);
+					_AddContent2(m_sRTF, L"SymbolId = %X, ", idOEMSym);
 				}
 
 				if (pSymbol->get_types(0, &count, NULL) == S_OK)
@@ -833,7 +844,7 @@ private:
 
 				if ((pSymbol->get_dataBytes(cbData, &cbData, NULL) == S_OK) && (cbData != 0))
 				{
-					wprintf(L", Data: ");
+					_AddContent(m_sRTF, L", Data: ");
 
 					BYTE* pbData = new BYTE[cbData];
 
@@ -841,7 +852,7 @@ private:
 
 					for (ULONG i = 0; i < cbData; i++)
 					{
-						wprintf(L"0x%02X ", pbData[i]);
+						_AddContent2(m_sRTF, L"0x%02X ", pbData[i]);
 					}
 
 					delete[] pbData;
@@ -866,7 +877,7 @@ private:
 
 		if (pSymbol->get_type(&pType) == S_OK)
 		{
-			wprintf(L", Type: ");
+			_AddContent(m_sRTF, L", Type: ");
 			PrintType(pType);
 			pType->Release();
 		}
@@ -884,14 +895,14 @@ private:
 
 		if (pSymbol->get_access(&dwAccess) == S_OK)
 		{
-			wprintf(L"%s ", SafeDRef(rgAccess, dwAccess));
+			_AddContent2(m_sRTF, L"%s ", SafeDRef(rgAccess, dwAccess));
 		}
 
 		BOOL bIsStatic = FALSE;
 
 		if ((pSymbol->get_isStatic(&bIsStatic) == S_OK) && bIsStatic)
 		{
-			wprintf(L"static ");
+			_AddContent(m_sRTF, L"static ");
 		}
 
 		IDiaSymbol* pFuncType;
@@ -903,13 +914,13 @@ private:
 			if (pFuncType->get_type(&pReturnType) == S_OK)
 			{
 				PrintType(pReturnType);
-				putwchar(L' ');
+				_AddContent(m_sRTF, L" ");
 
 				BSTR bstrName;
 
 				if (pSymbol->get_name(&bstrName) == S_OK)
 				{
-					wprintf(L"%s", bstrName);
+					_AddContent2(m_sRTF, L"%s", bstrName);
 
 					SysFreeString(bstrName);
 				}
@@ -922,7 +933,7 @@ private:
 					ULONG celt = 0;
 					ULONG nParam = 0;
 
-					wprintf(L"(");
+					_AddContent(m_sRTF, L"(");
 
 					while (SUCCEEDED(pEnumChildren->Next(1, &pChild, &celt)) && (celt == 1))
 					{
@@ -932,7 +943,7 @@ private:
 						{
 							if (nParam++)
 							{
-								wprintf(L", ");
+								_AddContent(m_sRTF, L", ");
 							}
 
 							PrintType(pType);
@@ -944,7 +955,7 @@ private:
 
 					pEnumChildren->Release();
 
-					wprintf(L")\n");
+					_AddContent(m_sRTF, L")\\par");
 				}
 
 				pReturnType->Release();
@@ -964,19 +975,19 @@ private:
 			(pSymbol->get_addressSection(&dwISect) == S_OK) &&
 			(pSymbol->get_addressOffset(&dwOffset) == S_OK))
 		{
-			wprintf(L"[%08X][%04X:%08X]", dwRVA, dwISect, dwOffset);
+			_AddContent2(m_sRTF, L"[%08X][%04X:%08X]", dwRVA, dwISect, dwOffset);
 		}
 
 		if ((pSymbol->get_targetSection(&dwISect) == S_OK) &&
 			(pSymbol->get_targetOffset(&dwOffset) == S_OK) &&
 			(pSymbol->get_targetRelativeVirtualAddress(&dwRVA) == S_OK))
 		{
-			wprintf(L", target [%08X][%04X:%08X] ", dwRVA, dwISect, dwOffset);
+			_AddContent2(m_sRTF, L", target [%08X][%04X:%08X] ", dwRVA, dwISect, dwOffset);
 		}
 
 		else
 		{
-			wprintf(L", target ");
+			_AddContent(m_sRTF, L", target ");
 
 			PrintName(pSymbol);
 		}
@@ -999,7 +1010,7 @@ private:
 
 		for (DWORD i = 0; i < dwIndent; i++)
 		{
-			//TODO: put indent
+			_AddContent(m_sRTF, L" ");
 		}
 
 		switch (dwSymTag)
@@ -1011,7 +1022,7 @@ private:
 				{
 					if (dwSymTagType == SymTagUDT)
 					{
-						putwchar(L'\n');
+						_AddContent(m_sRTF, L"\\par");
 						PrintTypeInDetail(pType, dwIndent + 2);
 					}
 				}
@@ -1026,7 +1037,7 @@ private:
 		case SymTagEnum:
 		case SymTagUDT:
 			PrintUDT(pSymbol);
-			putwchar(L'\n');
+			_AddContent(m_sRTF, L"\\par");
 
 			if (SUCCEEDED(pSymbol->findChildren(SymTagNull, NULL, nsNone, &pEnumChildren)))
 			{
@@ -1049,7 +1060,7 @@ private:
 
 		case SymTagPointerType:
 			PrintName(pSymbol);
-			wprintf(L" has type ");
+			_AddContent(m_sRTF, L" has type ");
 			PrintType(pSymbol);
 			break;
 
@@ -1076,7 +1087,7 @@ private:
 				if ((pSymbol->get_virtualBaseDispIndex(&dispIndex) == S_OK) &&
 					(pSymbol->get_virtualBasePointerOffset(&ptrOffset) == S_OK))
 				{
-					wprintf(L" virtual, offset = 0x%X, pointer offset = %ld, virtual base pointer type = ", dispIndex,
+					_AddContent2(m_sRTF, L" virtual, offset = 0x%X, pointer offset = %ld, virtual base pointer type = ", dispIndex,
 					        ptrOffset);
 
 					if (pSymbol->get_virtualBaseTableType(&pVBTableType) == S_OK)
@@ -1087,7 +1098,7 @@ private:
 
 					else
 					{
-						wprintf(L"(unknown)");
+						_AddContent(m_sRTF, L"(unknown)");
 					}
 				}
 			}
@@ -1098,11 +1109,11 @@ private:
 
 				if (pSymbol->get_offset(&offset) == S_OK)
 				{
-					wprintf(L", offset = 0x%X", offset);
+					_AddContent2(m_sRTF, L", offset = 0x%X", offset);
 				}
 			}
 
-			putwchar(L'\n');
+			_AddContent(m_sRTF, L"\\par");
 
 			if (SUCCEEDED(pSymbol->findChildren(SymTagNull, NULL, nsNone, &pEnumChildren)))
 			{
@@ -1129,7 +1140,10 @@ private:
 			break;
 
 		default:
-			wprintf(L"ERROR - PrintTypeInDetail() invalid SymTag\n");
+			break;
 		}
 	}
+
+private:
+	CString m_sRTF;
 };
