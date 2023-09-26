@@ -265,13 +265,13 @@ public:
 				break;
 			case ')': iParen--;
 				break;
-			case ':': if (iBracket > 0 || iParen > 0) sKeyName.SetAt(i, 'Ø');
+			case ':': if (iBracket > 0 || iParen > 0) sKeyName.SetAt(i, '~');
 				break;
 			}
 		}
 		sKeyName.Replace('|', '!');
 		sKeyName.Replace(_T("::"), _T("|"));
-		sKeyName.Replace('Ø', ':');
+		sKeyName.Replace('~', ':');
 		sKeyName.Replace(_T("__sz_"), _T(""));
 		sKeyName.Replace(_T("__imp_load_"), _T(""));
 		sKeyName.Replace(_T("__imp_"), _T(""));
