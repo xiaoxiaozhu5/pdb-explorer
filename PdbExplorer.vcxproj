@@ -100,6 +100,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="SymWrap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Collector.h" />
@@ -110,6 +111,7 @@
     <ClInclude Include="regs.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SymWrap.h" />
     <ClInclude Include="Thread.h" />
     <ClInclude Include="View.h" />
   </ItemGroup>

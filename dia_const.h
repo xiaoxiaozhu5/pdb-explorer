@@ -83,6 +83,20 @@ const wchar_t * const rgLocationTypeString[] =
   L"RegRelAliasIndir"
 };
 
+const wchar_t * const rgDataKind[] =
+{
+  L"Unknown",
+  L"Local",
+  L"Static Local",
+  L"Param",
+  L"Object Ptr",
+  L"File Static",
+  L"Global",
+  L"Member",
+  L"Static Member",
+  L"Constant",
+};
+
 const wchar_t * const rgAccess[] =
 {
   L"",                     // No access specifier

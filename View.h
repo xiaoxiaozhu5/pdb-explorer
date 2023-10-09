@@ -52,6 +52,9 @@ public:
 		m_ctrlTree.SetRedraw(TRUE);
 		m_ctrlView.SetWindowText(_T(""));
 
+		CString sKey(L"Source Files"), sToken(L"Source Files");
+		_InsertTreeNode(sKey, sToken, m_ctrlTree.GetRootItem(), 0, 0);
+
 		m_collector.Stop();
 		m_collector.Init(m_hWnd, pstrFilename);
 		m_collector.Start();
