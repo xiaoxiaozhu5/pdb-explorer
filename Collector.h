@@ -2,6 +2,8 @@
 #include <functional>
 #include <unordered_set>
 
+#include "SymWrap.h"
+
 class CPdbCollector;
 typedef BOOL (*EnumProc)(IDiaSymbol* curSym, PVOID param);
 
@@ -31,6 +33,8 @@ public:
 	CString m_sLastError;
 	CComAutoCriticalSection m_lock;
 	IDiaDataSource* m_spDataSource = NULL;
+	IDiaSymbol* m_global_sym = NULL;
+	IDiaSession* m_session = NULL;
 	CAtlArray<PDBSYMBOL> m_aSymbols;
 	volatile bool m_bDone;
 	std::unordered_set<std::wstring> m_dupSet;
@@ -78,14 +82,13 @@ public:
 				}
 			}
 
-			IDiaSession* spSession = NULL;
-			hr = m_spDataSource->openSession(&spSession);
+			hr = m_spDataSource->openSession(&m_session);
 			if (FAILED(hr))
 			{
 				return 3;
 			}
 			if (IsAborted()) _Abort();
-			_ProcessTables(spSession);
+			_ProcessTables(m_session);
 		}
 		_ATLCATCHALL()
 		{
@@ -99,44 +102,15 @@ public:
 
 	void _ProcessTables(IDiaSession* spSession) throw(...)
 	{
-		IDiaSymbol* global_symbol = NULL;
-		if (FAILED(spSession->get_globalScope(&global_symbol)))
+		//IDiaSymbol* global_symbol = NULL;
+		if (FAILED(spSession->get_globalScope(&m_global_sym)))
 		{
 			return;
 		}
-		auto enum_symbols = [&](IDiaSymbol* symParent, enum SymTagEnum enTag, EnumProc cbEnum,
-		                        PVOID param) -> IDiaSymbol*
-		{
-			if (NULL == symParent)
-				return NULL;
-
-			CComPtr<IDiaEnumSymbols> pEnum = NULL;
-			HRESULT hr = symParent->findChildren(enTag, NULL, nsNone, &pEnum);
-			if (SUCCEEDED(hr) && pEnum)
-			{
-				ULONG count = 1;
-				IDiaSymbol* curItem = NULL;
-				pEnum->Next(1, &curItem, &count);
-				do
-				{
-					if (NULL != curItem)
-					{
-						if (cbEnum(curItem, param))
-							return curItem;
-
-						curItem->Release();
-					}
-
-					pEnum->Next(1, &curItem, &count);
-				}while (0 != count);
-			}
-
-			return NULL;
-		};
-		enum_symbols(global_symbol, SymTagUDT, _ProcessUDT, this);
-		enum_symbols(global_symbol, SymTagEnum, _ProcessEnum, this);
-		enum_symbols(global_symbol, SymTagTypedef, _ProcessTypedef, this);
-		global_symbol->Release();
+		CSym::Enum(m_global_sym, SymTagUDT, _ProcessUDT, this);
+		CSym::Enum(m_global_sym, SymTagEnum, _ProcessEnum, this);
+		CSym::Enum(m_global_sym, SymTagTypedef, _ProcessTypedef, this);
+		//global_symbol->Release();
 	}
 
 	void _Fail()

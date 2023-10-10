@@ -62,6 +62,13 @@ public:
 
 		m_lLastSize = 0;
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
+
+		_ATLTRY
+		{
+		}
+		_ATLCATCHALL()
+		{
+		}
 	}
 
 	void ProcessTreeUpdates()

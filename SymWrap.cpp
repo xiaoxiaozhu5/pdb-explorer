@@ -128,7 +128,7 @@ void CSym::TypeDefine(__out CString* str, __in PCWSTR lpType)
 {
     CString strType;
     GetType(&strType);
-    str->Format(L"<font class=\"key\">typedef</font> %s %s;",
+    str->Format(L"<font color=blue>typedef</font> %s %s;",
         (PCWSTR)strType, lpType);
 }
 
@@ -158,7 +158,7 @@ BOOL CSymFunction::Format(__out CString* str)
     if (bVirtual)
     {
         str->Format(L"&nbsp;&nbsp;&nbsp;&nbsp;"         \
-            L"<font class=\"key\">virtual</font> %s",   \
+            L"<font color=blue>virtual</font> %s",   \
             (PCWSTR)strDeclare);
     }
     else
@@ -199,7 +199,7 @@ BOOL CSymData::Format(__out CString* str)
 
     // "    <type> <var>; // +<offset>(<size>)"
     str->Format(L"&nbsp;&nbsp;&nbsp;&nbsp;%s; "  \
-        L"<font class=\"comment\">// +0x%x(0x%x)</font><br />\r\n",
+        L"<font color=green>// +0x%x(0x%x)</font><br />\r\n",
         (PCWSTR)strDeclare, offset, (ULONG)size);
     return TRUE;
 }
@@ -217,13 +217,13 @@ BOOL CSymUDT::EnumBase(IDiaSymbol* sym, PVOID param)
     switch (enAccess)
     {
     case CV_private:
-        access = L"<font class=\"key\">private</font>";
+        access = L"<font color=blue>private</font>";
         break;
     case CV_protected:
-        access = L"<font class=\"key\">protected</font>";
+        access = L"<font color=blue>protected</font>";
         break;
     case CV_public:
-        access = L"<font class=\"key\">public</font>";
+        access = L"<font color=blue>public</font>";
         break;
     }
 
@@ -289,17 +289,17 @@ BOOL CSymUDT::Format(__out CString* str)
     {
         // struct 默认不带 public
         if (UdtClass == enKind || 0 != lenProtected || 0 != lenPrivate)
-            *str += L"<font class=\"key\">public</font>:<br />\r\n";
+            *str += L"<font color=blue>public</font>:<br />\r\n";
         *str += member.strPublic;
     }
     if (0 != lenProtected)
     {
-        *str += L"<font class=\"key\">protected</font>:<br />\r\n";
+        *str += L"<font color=blue>protected</font>:<br />\r\n";
         *str += member.strProtected;
     }
     if (0 != lenPrivate)
     {
-        *str += L"<font class=\"key\">private</font>:<br />\r\n";
+        *str += L"<font color=blue>private</font>:<br />\r\n";
         *str += member.strPrivate;
     }
 
@@ -315,17 +315,17 @@ BOOL CSymUDT::Format(__out CString* str)
     {
         // struct 默认不带 public
         if (UdtClass == enKind || 0 != lenProtected || 0 != lenPrivate)
-            *str += L"<font class=\"key\">public</font>:<br />\r\n";
+            *str += L"<font color=blue>public</font>:<br />\r\n";
         *str += member.strPublic;
     }
     if (0 != lenProtected)
     {
-        *str += L"<font class=\"key\">protected</font>:<br />\r\n";
+        *str += L"<font color=blue>protected</font>:<br />\r\n";
         *str += member.strProtected;
     }
     if (0 != lenPrivate)
     {
-        *str += L"<font class=\"key\">private</font>:<br />\r\n";
+        *str += L"<font color=blue>private</font>:<br />\r\n";
         *str += member.strPrivate;
     }
 
@@ -368,7 +368,7 @@ BOOL CSymUDT::GetHeader(__out CString* str)
 
     // header
     str->Format(L"<font class=\"key\">%s</font> %s%s "
-        L"<font class=\"comment\">// 0x%x</font><br />{<br />\r\n",
+        L"<font color=green>// 0x%x</font><br />{<br />\r\n",
         tmp, (PCWSTR)bsName, (PCWSTR)strBase, (DWORD)size);
     return TRUE;
 }
@@ -400,7 +400,7 @@ BOOL CSymUDT::GetType(__out CString* str)
     CComBSTR bsName;
     m_sym->get_symIndexId(&id);
     m_sym->get_name(&bsName);
-    str->Format(L"<font class=\"key\">%s</font> <a href=\"sym://%d\">%s</a>",
+    str->Format(L"<font color=blue>%s</font> <a href=\"sym://%d\">%s</a>",
         kind, id, (BSTR)bsName);
     return TRUE;
 }
@@ -422,7 +422,7 @@ BOOL CSymEnum::GetHeader(__out CString* str)
 {
     CComBSTR bsName;
     m_sym->get_name(&bsName);
-    str->Format(L"<font class=\"key\">enum</font> %s<br />{ <br />\r\n",
+    str->Format(L"<font color=blue>enum</font> %s<br />{ <br />\r\n",
         (PCWSTR)bsName);
     return TRUE;
 }
@@ -434,7 +434,7 @@ BOOL CSymEnum::GetType(__out CString* str)
 
     DWORD id;
     m_sym->get_symIndexId(&id);
-    str->Format(L"<font class=\"key\">enum</font> <a href=\"sym://%d\">%s</a>",
+    str->Format(L"<font color=blue>enum</font> <a href=\"sym://%d\">%s</a>",
         id, (PCWSTR)bsName);
     return TRUE;
 }
@@ -473,7 +473,7 @@ void CSymFunctionType::Declare(__out CString* str, __in PCWSTR lpName)
     CString strArgs;
     CSym::Enum(m_sym, SymTagFunctionArgType, EnumArg, &strArgs);
     if (0 == strArgs.GetLength())
-        strArgs = L"<font class=\"key\">void</font>";
+        strArgs = L"<font color=blue>void</font>";
 
     str->Format(L"%s%s(%s)", (PCWSTR)strRet, lpName, (PCWSTR)strArgs);
 }
@@ -487,7 +487,7 @@ PCWSTR CSymFunctionType::GetCallType(IDiaSymbol* sym)
     switch (enCall)
     {
     case CV_CALL_NEAR_STD:
-        ret = L"<font class=\"key\">__stdcall</font>";
+        ret = L"<font color=blue>__stdcall</font>";
         break;
     }
     return ret;
@@ -577,7 +577,7 @@ void CSymPointerType::TypeDefine(__out CString* str, __in PCWSTR lpType)
     sym->Declare(&strType, strName);
     CSym::Delete(sym);
 
-    str->Format(L"<font class=\"key\">typedef</font> %s;", (PCWSTR)strType);
+    str->Format(L"<font color=blue>typedef</font> %s;", (PCWSTR)strType);
 }
 
 void CSymArrayType::Declare(__out CString* str, __in PCWSTR lpName)
@@ -611,10 +611,10 @@ BOOL CSymBaseType::GetType(__out CString* str)
     switch (enType)
     {
     case btVoid:
-        type = L"<font class=\"key\">void</font>";
+        type = L"<font color=blue>void</font>";
         break;
     case btChar:
-        type = L"<font class=\"key\">char</font>";
+        type = L"<font color=blue>char</font>";
         break;
     case btWChar:
         type = L"WCHAR";
@@ -624,16 +624,16 @@ BOOL CSymBaseType::GetType(__out CString* str)
             switch (len)
             {
             case 1:
-                type = L"<font class=\"key\">char</font>";
+                type = L"<font color=blue>char</font>";
                 break;
             case 2:
-                type = L"<font class=\"key\">short</font>";
+                type = L"<font color=blue>short</font>";
                 break;
             case 4:
-                type = L"<font class=\"key\">int</font>";
+                type = L"<font color=blue>int</font>";
                 break;
             case 8:
-                type = L"<font class=\"key\">__int64</font>";
+                type = L"<font color=blue>__int64</font>";
                 break;
             }
         }
@@ -662,10 +662,10 @@ BOOL CSymBaseType::GetType(__out CString* str)
             switch (len)
             {
             case 4:
-                type = L"<font class=\"key\">float</font>";
+                type = L"<font color=blue>float</font>";
                 break;
             case 8:
-                type = L"<font class=\"key\">double</font>";
+                type = L"<font color=blue>double</font>";
                 break;
             }
         }
@@ -674,10 +674,10 @@ BOOL CSymBaseType::GetType(__out CString* str)
         type = L"BCD";
         break;
     case btBool: 
-        type = L"<font class=\"key\">bool</font>";
+        type = L"<font color=blue>bool</font>";
         break;
     case btLong: 
-        type = L"<font class=\"key\">long</font>";
+        type = L"<font color=blue>long</font>";
         break;
     case btULong: 
         type = L"ULONG";
