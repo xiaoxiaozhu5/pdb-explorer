@@ -171,7 +171,16 @@ public:
 		{
 			if (m_ctrlView.ExtractLink(pEnLink->chrg, szUrl, MAX_PATH))
 			{
-				MessageBoxW(szUrl);
+				PCWSTR p = _tcsstr(szUrl, TEXT("sym://"));
+				if (NULL != p)
+				{
+					CDiaInfo info;
+					DWORD id = _wtoi(p + 6);
+					PDBSYMBOL Symbol;
+					Symbol.dwSymId = id;
+					CString sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+					m_ctrlView.Load(sRTF);
+				}
 			}
 		}
 		return 0;
