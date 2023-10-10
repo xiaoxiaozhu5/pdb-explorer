@@ -38,6 +38,7 @@ public:
       MESSAGE_HANDLER(WM_SET_STATUS_TEXT, OnSetStatusBarText)
       COMMAND_ID_HANDLER(ID_FILE_OPEN, OnFileOpen)
       COMMAND_ID_HANDLER(ID_APP_EXIT, OnFileExit)
+      COMMAND_ID_HANDLER(ID_EDIT_COPY, OnCopy)
       COMMAND_ID_HANDLER(ID_VIEW_REFRESH, OnViewRefresh)
       COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
       COMMAND_ID_HANDLER(ID_VIEW_STATUS_BAR, OnViewStatusBar)
@@ -111,6 +112,13 @@ public:
    LRESULT OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
    {
       PostMessage(WM_CLOSE);
+      return 0;
+   }
+
+   LRESULT OnCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+   {
+      m_view.m_ctrlView.SetSel(0, -1);
+      m_view.m_ctrlView.Copy();
       return 0;
    }
 
