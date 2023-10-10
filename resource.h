@@ -18,6 +18,11 @@
 #define IDC_APPICON                     3007
 #define IDC_HOURGLASS                   3008
 
+#define ID_NAV_BACK                     4000
+#define ID_NVA_FOR                      4001
+#define ID_EDIT_MODIFY                  4002
+#define ID_APP_SETTING                  4003
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

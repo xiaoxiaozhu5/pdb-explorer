@@ -13,6 +13,7 @@ public:
 
    CBrowserView m_view;   
    CMultiPaneStatusBarCtrl m_StatusBar;
+   CCommandBarCtrl m_CmdBar;
 
    virtual BOOL PreTranslateMessage(MSG* pMsg)
    {
@@ -47,7 +48,20 @@ public:
 
    LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
    {
-      CreateSimpleToolBar();
+       // Create command bar window
+      HWND hWndCmdBar = m_CmdBar.Create(m_hWnd, rcDefault, NULL, ATL_SIMPLE_CMDBAR_PANE_STYLE);
+      // Attach menu
+      m_CmdBar.AttachMenu(GetMenu());
+      // Load command bar images
+      m_CmdBar.LoadImages(IDR_MAINFRAME);
+      // Remove old menu
+      SetMenu(NULL);
+
+      HWND hWndToolBar = CreateSimpleToolBarCtrl(m_hWnd, IDR_MAINFRAME, FALSE, ATL_SIMPLE_TOOLBAR_PANE_STYLE);
+      ATLASSERT(::IsWindow(hWndToolBar));
+      CreateSimpleReBar(ATL_SIMPLE_REBAR_NOBORDER_STYLE);
+      AddSimpleReBarBand(hWndCmdBar);
+      AddSimpleReBarBand(hWndToolBar, NULL, TRUE);
 
       m_hWndStatusBar = m_StatusBar.Create(m_hWnd);
    	  int aPanes[] = { ID_DEFAULT_PANE, IDS_SB_PANE1, IDS_SB_PANE2 };
@@ -134,20 +148,6 @@ public:
    {
        m_StatusBar.SetPaneText(wParam, (LPCTSTR)lParam);
        return 0;
-   }
-
-   // Overrides
-
-   static HWND CreateSimpleToolBarCtrl(HWND hWndParent, UINT /*nResourceID*/, BOOL /*bInitialSeparator*/ = FALSE, DWORD /*dwStyle*/ = ATL_SIMPLE_TOOLBAR_STYLE, UINT nID = ATL_IDW_TOOLBAR)
-   {
-      CWindow wnd = ::CreateWindowEx(WS_EX_TRANSPARENT, WC_STATIC, _T("  PDB Explorer Tool"), WS_CHILD | WS_VISIBLE | SS_NOPREFIX | SS_CENTERIMAGE, 0, 0, 3000, 24, hWndParent, (HMENU) nID, _pModule->GetResourceInstance(), 0);
-      CLogFont lf = AtlGetDefaultGuiFont();
-      _tcscpy_s(lf.lfFaceName, _countof(lf.lfFaceName), _T("Georgia"));
-      lf.MakeLarger(4);
-      static CFont s_fontBanner;
-      s_fontBanner.CreateFontIndirect(&lf);
-      wnd.SetFont(s_fontBanner);
-      return wnd;
    }
 };
 

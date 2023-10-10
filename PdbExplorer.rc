@@ -52,15 +52,15 @@ END
 
 IDR_MAINFRAME TOOLBAR 16, 15
 BEGIN
-    BUTTON      ID_FILE_NEW
     BUTTON      ID_FILE_OPEN
     BUTTON      ID_FILE_SAVE
     SEPARATOR
-    BUTTON      ID_EDIT_CUT
+    BUTTON      ID_NAV_BACK
+    BUTTON      ID_NVA_FOR
     BUTTON      ID_EDIT_COPY
-    BUTTON      ID_EDIT_PASTE
+    BUTTON      ID_EDIT_MODIFY
     SEPARATOR
-    BUTTON      ID_FILE_PRINT
+    BUTTON      ID_APP_SETTING
     BUTTON      ID_APP_ABOUT
 END
 
@@ -280,6 +280,14 @@ END
 STRINGTABLE
 BEGIN
     ATL_IDS_MRU_FILE        "Open this document"
+END
+
+STRINGTABLE
+BEGIN
+    ID_NAV_BACK             "Go back\nBack"
+    ID_NVA_FOR              "Go Forward\nForward"
+    ID_EDIT_MODIFY          "Modify\nModify"
+    ID_APP_SETTING          "Setting\nSettings"
 END
 
 #endif    // English (United States) resources
