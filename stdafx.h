@@ -28,6 +28,7 @@ extern CAppModule _Module;
 #include <atlctrlx.h>
 #include <atltheme.h>
 #include <atlctrlw.h>
+#include <atlwfile.h>
 
 //#pragma warning( disable : 4192 )
 //#import "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\DIA SDK\\bin\\msdia140.dll" \

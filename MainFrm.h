@@ -125,16 +125,44 @@ public:
 
    LRESULT OnSave(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
    {
-      COMDLG_FILTERSPEC spec[] = { {L"TXT Files", L"*.txt"} };
-      CShellFileSaveDialog dlg(NULL, FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST, _T("txt"), spec, _countof(spec));
-      dlg.DoModal();
-      CString sFilename;
-      dlg.GetFilePath(sFilename);
-      if( sFilename.IsEmpty() ) return 0;
       auto sel = m_view.m_ctrlTree.GetSelectedItem();
       CString sel_string;
       m_view.m_ctrlTree.GetItemText(sel, sel_string);
       if(sel_string.IsEmpty()) return 0;
+
+      TCHAR tmp[4096] = {0};
+      GETTEXTEX gtx = {0};
+      gtx.cb = 4096;
+      gtx.flags = GT_USECRLF;
+      gtx.codepage = 1200;
+      CString content;
+      m_view.m_ctrlView.GetTextEx(&gtx, tmp);
+      content = tmp;
+      if(content.IsEmpty()) return 0;
+
+      CString save_name;
+      save_name.Format(TEXT("%s.txt"), sel_string);
+      COMDLG_FILTERSPEC spec[] = { {L"TXT Files", L"*.txt"} };
+      CShellFileSaveDialog dlg(save_name, FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST, _T("txt"), spec, _countof(spec));
+      dlg.DoModal();
+      CString sFilename;
+      dlg.GetFilePath(sFilename);
+      if( sFilename.IsEmpty() ) return 0;
+
+      LPSTR pstrData = (LPSTR)malloc(content.GetLength() + 2);
+      if(pstrData)
+      {
+          ZeroMemory(pstrData, content.GetLength() + 2);
+		  AtlW2AHelper(pstrData, content, content.GetLength() + 2);
+		  pstrData[content.GetLength()] = '\0';
+		  CFile f;
+		  if (f.Create(sFilename))
+		  {
+			  f.Write(pstrData, content.GetLength());
+			  f.Close();
+		  }
+		  free(pstrData);
+      }
       return 0;
    }
 
