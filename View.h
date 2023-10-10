@@ -33,6 +33,7 @@ public:
 	CPdbCollector m_collector;
 	SIZE_T m_lLastSize;
 	CRgn m_rgnWaitAnim;
+	DWORD m_currentIndex;
 
 	BOOL PreTranslateMessage(MSG* pMsg)
 	{
@@ -61,7 +62,18 @@ public:
 		m_collector.Start();
 
 		m_lLastSize = 0;
+		m_currentIndex = 0;
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
+	}
+
+	void ShowSymbol(DWORD id)
+	{
+		CDiaInfo info;
+		PDBSYMBOL Symbol;
+		Symbol.dwSymId = id;
+		CString sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+		m_currentIndex = id;
+		m_ctrlView.Load(sRTF);
 	}
 
 	void ProcessTreeUpdates()
@@ -158,6 +170,8 @@ public:
 		{
 			PDBSYMBOL Symbol = m_collector.m_aSymbols[dwIndex];
 			sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+			m_currentIndex = Symbol.dwSymId;
+			::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
 		}
 		m_ctrlView.Load(sRTF);
 		return 0;
@@ -179,6 +193,8 @@ public:
 					PDBSYMBOL Symbol;
 					Symbol.dwSymId = id;
 					CString sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+					m_currentIndex = Symbol.dwSymId;
+					::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
 					m_ctrlView.Load(sRTF);
 				}
 			}
