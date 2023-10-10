@@ -84,7 +84,8 @@ public:
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
 		MESSAGE_HANDLER(WM_USER_LOAD_START, OnAnimStart)
 		MESSAGE_HANDLER(WM_USER_LOAD_END, OnAnimEnd)
-		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged);
+		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged)
+		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
 		END_MSG_MAP()
 
@@ -159,6 +160,20 @@ public:
 			sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
 		}
 		m_ctrlView.Load(sRTF);
+		return 0;
+	}
+
+	LRESULT OnLink(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
+	{
+		TCHAR szUrl[MAX_PATH] = {0};
+		ENLINK *pEnLink = (ENLINK *)pnmh;	
+		if(pEnLink->msg == WM_LBUTTONDOWN)
+		{
+			if (m_ctrlView.ExtractLink(pEnLink->chrg, szUrl, MAX_PATH))
+			{
+				MessageBoxW(szUrl);
+			}
+		}
 		return 0;
 	}
 
