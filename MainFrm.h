@@ -39,6 +39,7 @@ public:
       COMMAND_ID_HANDLER(ID_FILE_OPEN, OnFileOpen)
       COMMAND_ID_HANDLER(ID_APP_EXIT, OnFileExit)
       COMMAND_ID_HANDLER(ID_EDIT_COPY, OnCopy)
+      COMMAND_ID_HANDLER(ID_FILE_SAVE, OnSave)
       COMMAND_ID_HANDLER(ID_VIEW_REFRESH, OnViewRefresh)
       COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
       COMMAND_ID_HANDLER(ID_VIEW_STATUS_BAR, OnViewStatusBar)
@@ -119,6 +120,21 @@ public:
    {
       m_view.m_ctrlView.SetSel(0, -1);
       m_view.m_ctrlView.Copy();
+      return 0;
+   }
+
+   LRESULT OnSave(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+   {
+      COMDLG_FILTERSPEC spec[] = { {L"TXT Files", L"*.txt"} };
+      CShellFileSaveDialog dlg(NULL, FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST, _T("txt"), spec, _countof(spec));
+      dlg.DoModal();
+      CString sFilename;
+      dlg.GetFilePath(sFilename);
+      if( sFilename.IsEmpty() ) return 0;
+      auto sel = m_view.m_ctrlTree.GetSelectedItem();
+      CString sel_string;
+      m_view.m_ctrlTree.GetItemText(sel, sel_string);
+      if(sel_string.IsEmpty()) return 0;
       return 0;
    }
 
