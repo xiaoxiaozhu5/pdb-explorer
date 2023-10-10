@@ -81,8 +81,6 @@ public:
       pLoop->AddMessageFilter(this);
       pLoop->AddIdleHandler(this);
 
-      PostMessage(WM_COMMAND, ID_FILE_OPEN);
-
       return 0;
    }
 
