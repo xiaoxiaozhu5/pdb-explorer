@@ -134,6 +134,12 @@ public:
 	{
 		m_ctrlHourglass.ShowWindow(SW_HIDE);
 		m_ctrlHourglass.Stop();
+
+		CString s;
+		s.LoadString(IDS_TOTAL_SYMBOL);
+		CString st;
+		st.Format(s, m_lLastSize);
+		::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
 		return 0;
 	}
 

@@ -12,6 +12,7 @@ public:
    DECLARE_FRAME_WND_CLASS(NULL, IDR_MAINFRAME)
 
    CBrowserView m_view;   
+   CMultiPaneStatusBarCtrl m_StatusBar;
 
    virtual BOOL PreTranslateMessage(MSG* pMsg)
    {
@@ -33,6 +34,7 @@ public:
    BEGIN_MSG_MAP(CMainFrame)
       MESSAGE_HANDLER(WM_CREATE, OnCreate)
       MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+      MESSAGE_HANDLER(WM_SET_STATUS_TEXT, OnSetStatusBarText)
       COMMAND_ID_HANDLER(ID_FILE_OPEN, OnFileOpen)
       COMMAND_ID_HANDLER(ID_APP_EXIT, OnFileExit)
       COMMAND_ID_HANDLER(ID_VIEW_REFRESH, OnViewRefresh)
@@ -47,7 +49,9 @@ public:
    {
       CreateSimpleToolBar();
 
-      CreateSimpleStatusBar();
+      m_hWndStatusBar = m_StatusBar.Create(m_hWnd);
+   	  int aPanes[] = { ID_DEFAULT_PANE, IDS_SB_PANE1, IDS_SB_PANE2 };
+      m_StatusBar.SetPanes(aPanes, 3);
 
       m_hWndClient = m_view.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE, WS_EX_CLIENTEDGE);
 
@@ -124,6 +128,12 @@ public:
       CAboutDlg dlg;
       dlg.DoModal();
       return 0;
+   }
+
+   LRESULT OnSetStatusBarText(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+   {
+       m_StatusBar.SetPaneText(wParam, (LPCTSTR)lParam);
+       return 0;
    }
 
    // Overrides

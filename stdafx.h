@@ -36,3 +36,5 @@ extern CAppModule _Module;
 
 #include "dia2.h"
 
+#define WM_SET_STATUS_TEXT (WM_USER + 1)
+

@@ -114,9 +114,13 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\PdbExplorer.ico" />
+    <Image Include="res\Toolbar.bmp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PdbExplorer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\hourglass.avi" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,11 +1,13 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by ShellTest.rc
+// Microsoft Visual C++ generated include file.
+// Used by PdbExplorer.rc
 //
 #define IDD_ABOUTBOX                    100
 #define IDR_MAINFRAME                   128
 #define IDR_HOURGLASS                   129
-
+#define IDS_TOTAL_SYMBOL                130
+#define IDS_SB_PANE1                    131
+#define IDS_SB_PANE2                    132
 #define IDC_SHELLTREE                   3000
 #define IDC_NAMES                       3001
 #define IDC_ATTRIBUTES                  3002
@@ -15,7 +17,6 @@
 #define IDC_LABEL                       3006
 #define IDC_APPICON                     3007
 #define IDC_HOURGLASS                   3008
-
 
 // Next default values for new objects
 // 
