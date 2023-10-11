@@ -94,6 +94,11 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT
     END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "Go &Back",                    ID_NAV_BACK
+        MENUITEM "Go &Next",                    ID_NVA_FOR
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About PDB Explorer...",      ID_APP_ABOUT
