@@ -140,6 +140,10 @@ public:
 	{
 		m_ctrlHourglass.ShowWindow(SW_SHOWNOACTIVATE);
 		m_ctrlHourglass.Play(0, (UINT)-1, (UINT)-1);
+
+		CString s;
+		s.LoadString(IDS_START_PROCESS);
+		::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)s);
 		return 0;
 	}
 
