@@ -177,9 +177,10 @@ public:
 		if (!m_QueBack.empty())
 		{
 			DWORD id = m_QueBack.top();
-			if(m_view.m_currentIndex == id)
+			if(id == m_view.m_currentIndex)
 			{
 				m_QueBack.pop();
+				m_QueNext.push(id);
 				id = m_QueBack.top();
 			}
 			m_QueBack.pop();
@@ -196,9 +197,10 @@ public:
 		if (!m_QueNext.empty())
 		{
 			DWORD id = m_QueNext.top();
-			if(m_view.m_currentIndex == id)
+			if(id == m_view.m_currentIndex)
 			{
 				m_QueNext.pop();
+				m_QueBack.push(id);
 				id = m_QueNext.top();
 			}
 			m_QueNext.pop();
