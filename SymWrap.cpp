@@ -1,6 +1,20 @@
 #include "stdafx.h"
 #include "SymWrap.h"
 
+namespace 
+{
+    CString ValidateName(TCHAR* szName)
+    {
+        CString tmp(szName);
+        tmp.Replace(TEXT("&"), TEXT("&amp;"));
+        tmp.Replace(TEXT("<"), TEXT("&lt;"));
+        tmp.Replace(TEXT(">"), TEXT("&gt;"));
+        tmp.Replace(TEXT("\""), TEXT("&quot;"));
+        tmp.Replace(TEXT("\\~"), TEXT("&nbsp;"));
+        return tmp;
+    }
+}
+
 CSym::CSym(__in IDiaSymbol* sym)
 {
     m_sym = sym;
@@ -400,8 +414,9 @@ BOOL CSymUDT::GetType(__out CString* str)
     CComBSTR bsName;
     m_sym->get_symIndexId(&id);
     m_sym->get_name(&bsName);
+    CString validate_name = ValidateName(bsName.m_str);
     str->Format(L"<font color=blue>%s</font> <a href=\"sym://%d\">%s</a>",
-        kind, id, (BSTR)bsName);
+        kind, id, validate_name);
     return TRUE;
 }
 
@@ -434,8 +449,9 @@ BOOL CSymEnum::GetType(__out CString* str)
 
     DWORD id;
     m_sym->get_symIndexId(&id);
+    CString validate_name = ValidateName(bsName.m_str);
     str->Format(L"<font color=blue>enum</font> <a href=\"sym://%d\">%s</a>",
-        id, (PCWSTR)bsName);
+        id, validate_name);
     return TRUE;
 }
 
@@ -546,7 +562,7 @@ BOOL CSymPointerType::GetType(__out CString* str)
     BOOL bRef = FALSE;
     m_sym->get_reference(&bRef);
     if (bRef)
-        strType += L"&";
+        strType += L"&amp;";
     else
         strType += L"*";
     *str = strType;

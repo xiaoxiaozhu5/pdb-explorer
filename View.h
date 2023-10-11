@@ -218,6 +218,13 @@ public:
 			CString sKey = Symbol.sKey;
 			CString sToken = sKey.SpanExcluding(_T("|"));
 			_InsertTreeNode(sKey, sToken, m_ctrlTree.GetRootItem(), iIndex, 0);
+
+			CString s, st, sf;
+			s.LoadString(IDS_PROCESSING_SYMBOL);
+			auto pos = sKey.ReverseFind('|');
+			sf = sKey.Mid(pos + 1);
+			st.Format(s, sf, iIndex, m_collector.m_aSymbols.GetCount());
+			::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
 			if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL) break;
 		}
 		if (m_lLastSize == 0) _ExpandTreeNodes(m_ctrlTree.GetRootItem(), 0);

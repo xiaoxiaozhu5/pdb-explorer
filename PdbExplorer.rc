@@ -202,6 +202,7 @@ BEGIN
     IDS_SB_PANE1            "test pane 1"
     IDS_SB_PANE2            "test pane 2"
     IDS_START_PROCESS       "Start processing..."
+    IDS_PROCESSING_SYMBOL   "Processing %s(%d/%d)"
 END
 
 STRINGTABLE

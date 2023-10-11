@@ -9,6 +9,7 @@
 #define IDS_SB_PANE1                    131
 #define IDS_SB_PANE2                    132
 #define IDS_START_PROCESS               133
+#define IDS_PROCESSING_SYMBOL           134
 #define IDC_SHELLTREE                   3000
 #define IDC_NAMES                       3001
 #define IDC_ATTRIBUTES                  3002
