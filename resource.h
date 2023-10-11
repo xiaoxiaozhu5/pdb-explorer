@@ -10,6 +10,9 @@
 #define IDS_SB_PANE2                    132
 #define IDS_START_PROCESS               133
 #define IDS_PROCESSING_SYMBOL           134
+#define IDS_TYPE_UDT                    135
+#define IDS_TYPE_ENUM                   136
+#define IDS_TYPE_TYPEDEF                137
 #define IDC_SHELLTREE                   3000
 #define IDC_NAMES                       3001
 #define IDC_ATTRIBUTES                  3002

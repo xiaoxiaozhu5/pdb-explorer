@@ -203,6 +203,9 @@ BEGIN
     IDS_SB_PANE2            "test pane 2"
     IDS_START_PROCESS       "Start processing..."
     IDS_PROCESSING_SYMBOL   "Processing %s(%d/%d)"
+    IDS_TYPE_UDT            "User Defined Type"
+    IDS_TYPE_ENUM           "Enum"
+    IDS_TYPE_TYPEDEF        "Typedef"
 END
 
 STRINGTABLE

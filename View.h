@@ -54,8 +54,16 @@ public:
 		m_ctrlTree.SetRedraw(TRUE);
 		m_ctrlView.SetWindowText(_T(""));
 
-		CString sKey(L"Source Files"), sToken(L"Source Files");
-		_InsertTreeNode(sKey, sToken, m_ctrlTree.GetRootItem(), 0, 0);
+		CString sKey;
+		sKey.Format(TEXT("%s"), pstrFilename);
+		_InsertTreeNode(sKey, sKey, m_ctrlTree.GetRootItem(), -1, 0);
+		auto hItem = m_ctrlTree.GetRootItem();
+		sKey.LoadString(IDS_TYPE_UDT);
+		_InsertTreeNode(sKey, sKey, hItem, -1, 0);
+		sKey.LoadString(IDS_TYPE_ENUM);
+		_InsertTreeNode(sKey, sKey, hItem, -1, 0);
+		sKey.LoadString(IDS_TYPE_TYPEDEF);
+		_InsertTreeNode(sKey, sKey, hItem, -1, 0);
 
 		m_collector.Stop();
 		m_collector.Init(m_hWnd, pstrFilename);

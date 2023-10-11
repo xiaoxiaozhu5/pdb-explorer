@@ -29,7 +29,7 @@ class CPdbCollector : public CThreadImpl<CPdbCollector>
 	friend BOOL _ProcessTypedef(IDiaSymbol* sym, LPVOID param);
 public:
 	HWND m_hWnd;
-	CString m_sFilename;
+	CString m_sFilePath;
 	CString m_sLastError;
 	CComAutoCriticalSection m_lock;
 	IDiaDataSource* m_spDataSource = NULL;
@@ -46,7 +46,7 @@ public:
 	void Init(HWND hWnd, LPCTSTR pstrFilename)
 	{
 		m_aSymbols.RemoveAll();
-		m_sFilename = pstrFilename;
+		m_sFilePath = pstrFilename;
 		m_sLastError.Empty();
 		m_hWnd = hWnd;
 		m_bDone = false;
@@ -72,10 +72,10 @@ public:
 			}
 
 			wchar_t wszExt[MAX_PATH];
-			_wsplitpath_s(m_sFilename, NULL, 0, NULL, 0, NULL, 0, wszExt, MAX_PATH);
+			_wsplitpath_s(m_sFilePath, NULL, 0, NULL, 0, NULL, 0, wszExt, MAX_PATH);
 			if (!_wcsicmp(wszExt, L".pdb"))
 			{
-				hr = m_spDataSource->loadDataFromPdb(m_sFilename);
+				hr = m_spDataSource->loadDataFromPdb(m_sFilePath);
 				if (FAILED(hr))
 				{
 					return 2;
@@ -136,7 +136,7 @@ BOOL _ProcessUDT(IDiaSymbol* sym, LPVOID param)
 		sym->get_symIndexId(&id);
 
 		CString sKey;
-		sKey.Format(_T("Source Files|User Defined Type|%ls"), bstrName);
+		sKey.Format(_T("User Defined Type|%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, 0, 0, SymTagUDT, 0 };
 		This->m_aSymbols.Add(Info);
@@ -160,7 +160,7 @@ BOOL _ProcessEnum(IDiaSymbol* sym, LPVOID param)
 		sym->get_symIndexId(&id);
 
 		CString sKey;
-		sKey.Format(_T("Source Files|Enum|%ls"), bstrName);
+		sKey.Format(_T("Enum|%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, 0, 0, SymTagEnum, 0 };
 		This->m_aSymbols.Add(Info);
@@ -184,7 +184,7 @@ BOOL _ProcessTypedef(IDiaSymbol* sym, LPVOID param)
 		sym->get_symIndexId(&id);
 
 		CString sKey;
-		sKey.Format(_T("Source Files|Typedef|%ls"), bstrName);
+		sKey.Format(_T("Typedef|%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, 0, 0, SymTagTypedef, 0 };
 		This->m_aSymbols.Add(Info);
