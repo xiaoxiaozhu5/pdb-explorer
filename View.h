@@ -187,10 +187,23 @@ public:
 				{
 					CString pdb_info;
 					auto pdb_hdr = raw_pdb.GetHeader();
-					pdb_info.Format(_T("Version %u, signature %u, age %u, GUID %08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x"),
+					pdb_info.Format(_T("Version %u, signature %u, age %u, GUID %08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x Block Size %lu Number of blocks %lu Number of streams %lu "),
 						static_cast<uint32_t>(pdb_hdr->version), pdb_hdr->signature, pdb_hdr->age,
 						pdb_hdr->guid.Data1, pdb_hdr->guid.Data2, pdb_hdr->guid.Data3,
-						pdb_hdr->guid.Data4[0], pdb_hdr->guid.Data4[1], pdb_hdr->guid.Data4[2], pdb_hdr->guid.Data4[3], pdb_hdr->guid.Data4[4], pdb_hdr->guid.Data4[5], pdb_hdr->guid.Data4[6], pdb_hdr->guid.Data4[7]);
+						pdb_hdr->guid.Data4[0], pdb_hdr->guid.Data4[1], pdb_hdr->guid.Data4[2], pdb_hdr->guid.Data4[3], pdb_hdr->guid.Data4[4], pdb_hdr->guid.Data4[5], pdb_hdr->guid.Data4[6], pdb_hdr->guid.Data4[7],
+						raw_pdb.GetBlockSize(), raw_pdb.GetBlockCount(), raw_pdb.GetStremCount());
+					size_t feature_num = 0;
+					auto feature = raw_pdb.GetFeature(&feature_num);
+					CString sFeature(_T(" Feature ("));
+					for(size_t i = 0u; i < feature_num; ++i)
+					{
+						CString fea;
+						fea.Format(_T("%08X"), feature[i]);
+						sFeature += fea;
+						sFeature += _T(" ");
+					}
+					sFeature += _T(")");
+					pdb_info += sFeature;
 					sRTF = pdb_info;
 				}
 			}
