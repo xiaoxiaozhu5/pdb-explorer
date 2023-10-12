@@ -10,6 +10,7 @@ enum
 #include "DiaInfo.h"
 
 #include "SimpleHtml.h"
+#include "RawPdb.h"
 
 
 class CBrowserView : public CSplitterWindowImpl<CBrowserView>
@@ -172,11 +173,31 @@ public:
 	{
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
 		CDiaInfo info;
-		DWORD dwIndex = m_ctrlTree.GetItemData(m_ctrlTree.GetSelectedItem());
+		HTREEITEM hTreeSel = m_ctrlTree.GetSelectedItem();
+		DWORD dwIndex = m_ctrlTree.GetItemData(hTreeSel);
 		CString sRTF;
 		if (dwIndex == (DWORD)-1)
 		{
-			sRTF = info.GetEmptyInfo(m_ctrlTree);
+			if(m_ctrlTree.GetRootItem() == hTreeSel)
+			{
+				CString pdb_path;
+				m_ctrlTree.GetItemText(hTreeSel, pdb_path);
+				PDB::RawPdb raw_pdb;
+				if(raw_pdb.Open(pdb_path))
+				{
+					CString pdb_info;
+					auto pdb_hdr = raw_pdb.GetHeader();
+					pdb_info.Format(_T("Version %u, signature %u, age %u, GUID %08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x"),
+						static_cast<uint32_t>(pdb_hdr->version), pdb_hdr->signature, pdb_hdr->age,
+						pdb_hdr->guid.Data1, pdb_hdr->guid.Data2, pdb_hdr->guid.Data3,
+						pdb_hdr->guid.Data4[0], pdb_hdr->guid.Data4[1], pdb_hdr->guid.Data4[2], pdb_hdr->guid.Data4[3], pdb_hdr->guid.Data4[4], pdb_hdr->guid.Data4[5], pdb_hdr->guid.Data4[6], pdb_hdr->guid.Data4[7]);
+					sRTF = pdb_info;
+				}
+			}
+			else
+			{
+				sRTF = info.GetEmptyInfo(m_ctrlTree);
+			}
 		}
 		else
 		{

@@ -56,6 +56,9 @@
     <ClInclude Include="SimpleHtml.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RawPdb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\PdbExplorer.ico">
