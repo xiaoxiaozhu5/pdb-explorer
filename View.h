@@ -27,13 +27,14 @@ public:
 		TIMER_WORK_INTERVAL = 150,
 	};
 
+	CString m_path;
 	CTreeViewCtrl m_ctrlTree;
 	CSimpleHtmlCtrl m_ctrlView;
-	CAnimateCtrl m_ctrlHourglass;
+	//CAnimateCtrl m_ctrlHourglass;
 
 	CPdbCollector m_collector;
 	SIZE_T m_lLastSize;
-	CRgn m_rgnWaitAnim;
+	//CRgn m_rgnWaitAnim;
 	DWORD m_currentIndex;
 
 	BOOL PreTranslateMessage(MSG* pMsg)
@@ -43,6 +44,7 @@ public:
 
 	void LoadFromFile(LPCTSTR pstrFilename)
 	{
+		m_path = pstrFilename;
 		CWaitCursor cursor;
 
 		KillTimer(TIMERID_POPULATE);
@@ -80,7 +82,7 @@ public:
 		CDiaInfo info;
 		PDBSYMBOL Symbol;
 		Symbol.dwSymId = id;
-		CString sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+		CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 		m_currentIndex = id;
 		m_ctrlView.Load(sRTF);
 	}
@@ -117,6 +119,7 @@ public:
 		m_ctrlView.Create(m_hWnd, rcDefault, _T(""),
 		                  WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 0,
 		                  IDC_TREE);
+		/*
 		RECT rcAnim = {10, 10, 10 + 32, 10 + 32};
 		m_ctrlHourglass.Create(m_ctrlView, rcAnim, _T(""), WS_CHILD | ACS_CENTER | ACS_TRANSPARENT, 0, IDC_HOURGLASS);
 		m_ctrlHourglass.Open(IDR_HOURGLASS);
@@ -124,6 +127,7 @@ public:
 		m_ctrlHourglass.GetClientRect(&rcHourglass);
 		m_rgnWaitAnim.CreateRoundRectRgn(0, 0, rcAnim.right - rcAnim.left, rcAnim.bottom - rcAnim.top, 12, 12);
 		m_ctrlHourglass.SetWindowRgn(m_rgnWaitAnim, FALSE);
+		*/
 		SetSplitterPosPct(20);
 		SetSplitterPanes(m_ctrlTree, m_ctrlView);
 		bHandled = FALSE;
@@ -147,8 +151,8 @@ public:
 
 	LRESULT OnAnimStart(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 	{
-		m_ctrlHourglass.ShowWindow(SW_SHOWNOACTIVATE);
-		m_ctrlHourglass.Play(0, (UINT)-1, (UINT)-1);
+		//m_ctrlHourglass.ShowWindow(SW_SHOWNOACTIVATE);
+		//m_ctrlHourglass.Play(0, (UINT)-1, (UINT)-1);
 
 		CString s;
 		s.LoadString(IDS_START_PROCESS);
@@ -158,8 +162,8 @@ public:
 
 	LRESULT OnAnimEnd(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 	{
-		m_ctrlHourglass.ShowWindow(SW_HIDE);
-		m_ctrlHourglass.Stop();
+		//m_ctrlHourglass.ShowWindow(SW_HIDE);
+		//m_ctrlHourglass.Stop();
 
 		CString s;
 		s.LoadString(IDS_TOTAL_SYMBOL);
@@ -217,7 +221,7 @@ public:
 		else
 		{
 			PDBSYMBOL Symbol = m_collector.m_aSymbols[dwIndex];
-			sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+			sRTF = info.GetSymbolInfo(m_path, Symbol);
 			m_currentIndex = Symbol.dwSymId;
 			::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
 		}
@@ -240,7 +244,7 @@ public:
 					DWORD id = _wtoi(p + 6);
 					PDBSYMBOL Symbol;
 					Symbol.dwSymId = id;
-					CString sRTF = info.GetSymbolInfo(m_collector.m_global_sym, Symbol);
+					CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 					m_currentIndex = Symbol.dwSymId;
 					::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
 					m_ctrlView.Load(sRTF);

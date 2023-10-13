@@ -743,7 +743,7 @@ public:
       USES_CONVERSION;
       RtfStream st = { T2CA(pstrText), 0 }; // TODO: Don't use inline conversion for large texts
       EDITSTREAM es = { 0 };
-      es.dwCookie = (DWORD) &st;
+      es.dwCookie = (DWORD_PTR) &st;
       es.dwError = 0;
       es.pfnCallback = _StreamReadCallback;
       // NOTE: If execption handling is enabled for the app, the little ATLTRY macro
@@ -807,7 +807,7 @@ public:
 #endif
    }
 
-   static DWORD CALLBACK _StreamReadCallback(DWORD dwCookie, LPBYTE pbBuff, LONG cb, LONG FAR *pcb)
+   static DWORD CALLBACK _StreamReadCallback(DWORD_PTR dwCookie, LPBYTE pbBuff, LONG cb, LONG FAR *pcb)
    {
       RtfStream *pS = reinterpret_cast<RtfStream *>(dwCookie);
       ATLASSERT(pS);

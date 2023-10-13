@@ -132,13 +132,15 @@ BOOL _ProcessUDT(IDiaSymbol* sym, LPVOID param)
 	sym->get_name(&bstrName);
 	if(0 != lstrcmpW(bstrName, L"__unnamed") && This->m_dupSet.count(bstrName.m_str) == 0)
 	{
-		DWORD id;
+		DWORD id, dwAddrSect, dwAddrOffset;
 		sym->get_symIndexId(&id);
+		sym->get_addressSection(&dwAddrSect);
+		sym->get_addressOffset(&dwAddrOffset);
 
 		CString sKey;
 		sKey.Format(_T("User Defined Type|%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
-		PDBSYMBOL Info = { sKey, id, 0, 0, SymTagUDT, 0 };
+		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagUDT, 0 };
 		This->m_aSymbols.Add(Info);
 		This->m_dupSet.insert(bstrName.m_str);
 		if (This->IsAborted()) throw 1;
@@ -156,13 +158,15 @@ BOOL _ProcessEnum(IDiaSymbol* sym, LPVOID param)
 	sym->get_name(&bstrName);
 	if(0 != lstrcmpW(bstrName, L"__unnamed") && This->m_dupSet.count(bstrName.m_str) == 0)
 	{
-		DWORD id;
+		DWORD id, dwAddrSect, dwAddrOffset;
 		sym->get_symIndexId(&id);
+		sym->get_addressSection(&dwAddrSect);
+		sym->get_addressOffset(&dwAddrOffset);
 
 		CString sKey;
 		sKey.Format(_T("Enum|%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
-		PDBSYMBOL Info = { sKey, id, 0, 0, SymTagEnum, 0 };
+		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagEnum, 0 };
 		This->m_aSymbols.Add(Info);
 		This->m_dupSet.insert(bstrName.m_str);
 		if (This->IsAborted()) throw 1;
@@ -180,13 +184,15 @@ BOOL _ProcessTypedef(IDiaSymbol* sym, LPVOID param)
 	sym->get_name(&bstrName);
 	if(0 != lstrcmpW(bstrName, L"__unnamed") && This->m_dupSet.count(bstrName.m_str) == 0)
 	{
-		DWORD id;
+		DWORD id, dwAddrSect, dwAddrOffset;
 		sym->get_symIndexId(&id);
+		sym->get_addressSection(&dwAddrSect);
+		sym->get_addressOffset(&dwAddrOffset);
 
 		CString sKey;
 		sKey.Format(_T("Typedef|%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
-		PDBSYMBOL Info = { sKey, id, 0, 0, SymTagTypedef, 0 };
+		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagTypedef, 0 };
 		This->m_aSymbols.Add(Info);
 		This->m_dupSet.insert(bstrName.m_str);
 		if (This->IsAborted()) throw 1;
