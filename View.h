@@ -267,7 +267,7 @@ public:
 			s.LoadString(IDS_PROCESSING_SYMBOL);
 			auto pos = sKey.ReverseFind('|');
 			sf = sKey.Mid(pos + 1);
-			st.Format(s, sf, iIndex, m_collector.m_aSymbols.GetCount());
+			st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), sf);
 			::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
 			if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL) break;
 		}
