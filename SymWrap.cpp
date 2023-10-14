@@ -375,6 +375,7 @@ BOOL CSymUDT::GetHeader(__out CString* str)
     CComBSTR bsName;
     ULONGLONG size;
     m_sym->get_name(&bsName);
+    CString validate_name = ValidateName(bsName);
     m_sym->get_length(&size);
 
     // base
@@ -384,7 +385,7 @@ BOOL CSymUDT::GetHeader(__out CString* str)
     // header
     str->Format(L"<font class=\"key\">%s</font> %s%s "
         L"<font color=green>// 0x%x</font><br />{<br />\r\n",
-        tmp, (PCWSTR)bsName, (PCWSTR)strBase, (DWORD)size);
+        tmp, validate_name, (PCWSTR)strBase, (DWORD)size);
     return TRUE;
 }
 
