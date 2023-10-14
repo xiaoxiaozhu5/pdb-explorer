@@ -50,6 +50,7 @@ public:
 		m_sLastError.Empty();
 		m_hWnd = hWnd;
 		m_bDone = false;
+		m_dupSet.clear();
 	}
 
 	DWORD Run()
