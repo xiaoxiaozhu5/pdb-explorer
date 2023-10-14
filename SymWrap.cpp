@@ -150,6 +150,7 @@ BOOL CSymFunction::Format(__out CString* str)
 {
     CComBSTR bsName;
     m_sym->get_name(&bsName);
+    CString validate_name = ValidateName(bsName);
 
     CComPtr<IDiaSymbol> type;
     m_sym->get_type(&type);
@@ -158,9 +159,9 @@ BOOL CSymFunction::Format(__out CString* str)
     CString strName;
     PCWSTR call = CSymFunctionType::GetCallType(type);
     if (NULL == call || L'\0' == *call)
-        strName.Format(L"%s", (PCWSTR)bsName);
+        strName.Format(L"%s", validate_name);
     else
-        strName.Format(L"%s %s", call, (PCWSTR)bsName);
+        strName.Format(L"%s %s", call, validate_name);
 
     CSym* sym = CSym::NewSym(type);
     sym->Declare(&strDeclare, strName);
