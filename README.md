@@ -16,6 +16,15 @@ The DIA SDK is installed by default when you install Visual Studio.It's in `C:\P
 ```
 %systemroot%\system32\regsrv32.exe "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\DIA SDK\bin\amd64\msdia140.dll"
 ```
+
+## Build
+Open `x64 Native Tools Command Prompt for VS 2022`,then run:
+```
+msbuild -m PdbExplorer.sln /p:Configuration=Release,Platform=x64,DebugSymbols=true,DebugType=pdbonly
+or
+msbuild -m PdbExplorer.sln /p:Configuration=Release,Platform=Win32,DebugSymbols=false,DebugType=none
+```
+
 ## Screenshot
 <img src="./doc/img/home.png" />
 <img src="./doc/img/enum.png" />
