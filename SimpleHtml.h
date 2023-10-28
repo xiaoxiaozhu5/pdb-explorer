@@ -193,7 +193,7 @@ public:
          ATLASSERT(*pszStart == _T('>'));
          *pszTag = _T('\0');
          pszStart++;
-         ::CharLowerBuff(szTag, _tcslen(szTag));
+         //::CharLowerBuff(szTag, _tcslen(szTag));
 
          // Extract the tag-name
          TCHAR szTagName[16];

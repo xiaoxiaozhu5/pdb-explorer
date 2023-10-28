@@ -37,6 +37,11 @@ public:
 	//CRgn m_rgnWaitAnim;
 	DWORD m_currentIndex;
 
+	HTREEITEM m_root_treeitem;
+	HTREEITEM m_udt_treeitem;
+	HTREEITEM m_enum_treeitem;
+	HTREEITEM m_typedef_treeitem;
+
 	BOOL PreTranslateMessage(MSG* pMsg)
 	{
 		return FALSE;
@@ -59,14 +64,18 @@ public:
 
 		CString sKey;
 		sKey.Format(TEXT("%s"), pstrFilename);
-		_InsertTreeNode(sKey, sKey, m_ctrlTree.GetRootItem(), -1, 0);
-		auto hItem = m_ctrlTree.GetRootItem();
+		m_root_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_ctrlTree.SetItemData(m_root_treeitem, -1);
+
 		sKey.LoadString(IDS_TYPE_UDT);
-		_InsertTreeNode(sKey, sKey, hItem, -1, 0);
+		m_udt_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_ctrlTree.SetItemData(m_udt_treeitem, -1);
 		sKey.LoadString(IDS_TYPE_ENUM);
-		_InsertTreeNode(sKey, sKey, hItem, -1, 0);
+		m_enum_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_ctrlTree.SetItemData(m_enum_treeitem, -1);
 		sKey.LoadString(IDS_TYPE_TYPEDEF);
-		_InsertTreeNode(sKey, sKey, hItem, -1, 0);
+		m_typedef_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_ctrlTree.SetItemData(m_typedef_treeitem, -1);
 
 		m_collector.Stop();
 		m_collector.Init(m_hWnd, pstrFilename);
@@ -241,9 +250,10 @@ public:
 				if (NULL != p)
 				{
 					CDiaInfo info;
-					DWORD id = _wtoi(p + 6);
+					//DWORD id = _wtoi(p + 6);
 					PDBSYMBOL Symbol;
-					Symbol.dwSymId = id;
+					Symbol.dwSymId = 0;
+					Symbol.sKey = p+6;
 					CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 					m_currentIndex = Symbol.dwSymId;
 					::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
@@ -263,15 +273,24 @@ public:
 		for (iIndex = m_lLastSize; iIndex < m_collector.m_aSymbols.GetCount(); iIndex++)
 		{
 			const PDBSYMBOL& Symbol = m_collector.m_aSymbols[iIndex];
-			CString sKey = Symbol.sKey;
-			CString sToken = sKey.SpanExcluding(_T("|"));
-			_InsertTreeNode(sKey, sToken, m_ctrlTree.GetRootItem(), iIndex, 0);
+			switch (Symbol.dwSymTag)
+			{
+			case SymTagUDT:
+				_InsertTreeNode(Symbol.sKey, m_udt_treeitem, iIndex, 0);
+				break;
+			case SymTagEnum:
+				_InsertTreeNode(Symbol.sKey, m_enum_treeitem, iIndex, 0);
+				break;
+			case SymTagTypedef:
+				_InsertTreeNode(Symbol.sKey, m_typedef_treeitem, iIndex, 0);
+				break;
+			default:
+				break;
+			}
 
-			CString s, st, sf;
+			CString s, st;
 			s.LoadString(IDS_PROCESSING_SYMBOL);
-			auto pos = sKey.ReverseFind('|');
-			sf = sKey.Mid(pos + 1);
-			st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), sf);
+			st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), Symbol.sKey);
 			::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
 			if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL) break;
 		}
@@ -289,23 +308,11 @@ public:
 		}
 	}
 
-	void _InsertTreeNode(CString& sKey, CString& sToken, HTREEITEM hItem, SIZE_T iIndex, int iDataLevel)
+	void _InsertTreeNode(const CString& sToken, HTREEITEM hItem, SIZE_T iIndex, int iDataLevel)
 	{
 		if (sToken.IsEmpty()) return;
-		bool bLastToken = (sKey.Find('|') < 0);
-		HTREEITEM hChild = _FindTreeChildItem(hItem, sToken);
-		if (hChild == NULL)
-		{
-			hChild = m_ctrlTree.InsertItem(sToken, -1, -1, hItem, TVI_SORT);
-			m_ctrlTree.SetItemData(hChild, bLastToken ? iIndex : (DWORD)-1);
-		}
-		else if (bLastToken)
-		{
-			m_ctrlTree.SetItemData(hChild, iIndex);
-		}
-		CString sNewKey = sKey.Mid(sToken.GetLength() + 1);
-		CString sNewToken = sNewKey.SpanExcluding(_T("|"));
-		_InsertTreeNode(sNewKey, sNewToken, hChild, iIndex, iDataLevel);
+		auto hChild = m_ctrlTree.InsertItem(sToken, -1, -1, hItem, TVI_LAST);
+		m_ctrlTree.SetItemData(hChild, iIndex);
 	}
 
 	HTREEITEM _FindTreeChildItem(HTREEITEM hItem, LPCTSTR pstrName) const

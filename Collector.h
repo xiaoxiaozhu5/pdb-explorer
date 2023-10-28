@@ -139,7 +139,7 @@ BOOL _ProcessUDT(IDiaSymbol* sym, LPVOID param)
 		sym->get_addressOffset(&dwAddrOffset);
 
 		CString sKey;
-		sKey.Format(_T("User Defined Type|%ls"), bstrName);
+		sKey.Format(_T("%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagUDT, 0 };
 		This->m_aSymbols.Add(Info);
@@ -165,7 +165,7 @@ BOOL _ProcessEnum(IDiaSymbol* sym, LPVOID param)
 		sym->get_addressOffset(&dwAddrOffset);
 
 		CString sKey;
-		sKey.Format(_T("Enum|%ls"), bstrName);
+		sKey.Format(_T("%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagEnum, 0 };
 		This->m_aSymbols.Add(Info);
@@ -191,7 +191,7 @@ BOOL _ProcessTypedef(IDiaSymbol* sym, LPVOID param)
 		sym->get_addressOffset(&dwAddrOffset);
 
 		CString sKey;
-		sKey.Format(_T("Typedef|%ls"), bstrName);
+		sKey.Format(_T("%ls"), bstrName);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagTypedef, 0 };
 		This->m_aSymbols.Add(Info);

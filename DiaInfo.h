@@ -48,8 +48,6 @@ public:
 			IDiaSymbol *symbol = NULL;
 			m_session->get_globalScope(&m_global);
 
-			auto pos = Symbol.sKey.ReverseFind('|');
-			CString sf = Symbol.sKey.Mid(pos + 1);
 			IDiaEnumSymbols *enum_symbols = NULL;
 			ULONG celt = 1;
 			bool bFind = false;
@@ -61,7 +59,7 @@ public:
 				{
 					CComBSTR bstrName;
 					symbol->get_name(&bstrName);
-					if (CString(bstrName.m_str) == sf)
+					if (CString(bstrName.m_str) == Symbol.sKey)
 					{
 						bFind = true;
 						break;
