@@ -15,8 +15,8 @@ public:
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CCommandBarCtrl m_CmdBar;
 
-	std::stack<DWORD> m_QueBack;
-	std::stack<DWORD> m_QueNext;
+	std::stack<CString> m_QueBack;
+	std::stack<CString> m_QueNext;
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg)
 	{
@@ -176,7 +176,7 @@ public:
 	{
 		if (!m_QueBack.empty())
 		{
-			DWORD id = m_QueBack.top();
+			CString id = m_QueBack.top();
 			if(id == m_view.m_currentIndex)
 			{
 				m_QueBack.pop();
@@ -196,7 +196,7 @@ public:
 	{
 		if (!m_QueNext.empty())
 		{
-			DWORD id = m_QueNext.top();
+			CString id = m_QueNext.top();
 			if(id == m_view.m_currentIndex)
 			{
 				m_QueNext.pop();
@@ -250,7 +250,8 @@ public:
 
 	LRESULT OnAddHistory(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 	{
-		m_QueBack.push(wParam);
+		m_QueBack.push((BSTR)wParam);
+		SysFreeString((BSTR)wParam);
 		return 0;
 	}
 };

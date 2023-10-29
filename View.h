@@ -35,7 +35,7 @@ public:
 	CPdbCollector m_collector;
 	SIZE_T m_lLastSize;
 	//CRgn m_rgnWaitAnim;
-	DWORD m_currentIndex;
+	CString m_currentIndex;
 
 	HTREEITEM m_root_treeitem;
 	HTREEITEM m_udt_treeitem;
@@ -82,15 +82,14 @@ public:
 		m_collector.Start();
 
 		m_lLastSize = 0;
-		m_currentIndex = 0;
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
 	}
 
-	void ShowSymbol(DWORD id)
+	void ShowSymbol(const CString& id)
 	{
 		CDiaInfo info;
 		PDBSYMBOL Symbol;
-		Symbol.dwSymId = id;
+		Symbol.sKey = id;
 		CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 		m_currentIndex = id;
 		m_ctrlView.Load(sRTF);
@@ -231,8 +230,8 @@ public:
 		{
 			PDBSYMBOL Symbol = m_collector.m_aSymbols[dwIndex];
 			sRTF = info.GetSymbolInfo(m_path, Symbol);
-			m_currentIndex = Symbol.dwSymId;
-			::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
+			m_currentIndex = Symbol.sKey;
+			::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
 		}
 		m_ctrlView.Load(sRTF);
 		return 0;
@@ -255,8 +254,8 @@ public:
 					Symbol.dwSymId = 0;
 					Symbol.sKey = p+6;
 					CString sRTF = info.GetSymbolInfo(m_path, Symbol);
-					m_currentIndex = Symbol.dwSymId;
-					::SendMessage(GetParent(), WM_ADD_HISTORY, Symbol.dwSymId, 0);
+					m_currentIndex = Symbol.sKey;
+					::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
 					m_ctrlView.Load(sRTF);
 				}
 			}
