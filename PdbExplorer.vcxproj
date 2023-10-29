@@ -159,7 +159,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;PROJECTNAME=$(ProjectName);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -189,6 +189,7 @@
   <ItemGroup>
     <ClInclude Include="Collector.h" />
     <ClInclude Include="DiaInfo.h" />
+    <ClInclude Include="log.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="PdbExplorer.h" />
     <ClInclude Include="RawPdb.h" />

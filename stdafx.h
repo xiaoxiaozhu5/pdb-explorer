@@ -38,6 +38,9 @@ extern CAppModule _Module;
 
 #include "dia2.h"
 
+#include <tchar.h>
+#include "log.h"
+
 #define WM_SET_STATUS_TEXT (WM_USER + 1)
 #define WM_ADD_HISTORY     (WM_USER + 2)
 
