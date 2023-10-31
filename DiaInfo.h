@@ -36,14 +36,14 @@ public:
 				hr = m_spDataSource->loadDataFromPdb(path);
 				if (FAILED(hr))
 				{
-					return 2;
+					return CString();
 				}
 			}
 
 			hr = m_spDataSource->openSession(&m_session);
 			if (FAILED(hr))
 			{
-				return 3;
+				return CString();
 			}
 			IDiaSymbol *symbol = NULL;
 			m_session->get_globalScope(&m_global);
