@@ -124,7 +124,6 @@ public:
 
 	LRESULT OnCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 	{
-		m_view.m_ctrlView.SetSel(0, -1);
 		m_view.m_ctrlView.Copy();
 		return 0;
 	}

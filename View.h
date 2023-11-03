@@ -126,8 +126,10 @@ public:
 		DWORD dwStyle = WS_CHILD | WS_VISIBLE | TVS_HASBUTTONS | TVS_HASLINES | TVS_SHOWSELALWAYS;
 		m_ctrlTree.Create(m_hWnd, rcDefault, _T(""), dwStyle, 0, IDC_TREE);
 		m_ctrlView.Create(m_hWnd, rcDefault, _T(""),
-		                  WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 0,
-		                  IDC_TREE);
+					WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | 
+					      ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_NOHIDESEL |
+			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
+			0,IDC_TREE);
 		/*
 		RECT rcAnim = {10, 10, 10 + 32, 10 + 32};
 		m_ctrlHourglass.Create(m_ctrlView, rcAnim, _T(""), WS_CHILD | ACS_CENTER | ACS_TRANSPARENT, 0, IDC_HOURGLASS);
