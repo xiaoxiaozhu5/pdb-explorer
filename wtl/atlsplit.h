@@ -1088,7 +1088,7 @@ public:
 		MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBackground)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		CHAIN_MSG_MAP(CSplitterImpl< T >)
-		FORWARD_NOTIFICATIONS()
+		//FORWARD_NOTIFICATIONS()
 	END_MSG_MAP()
 
 	LRESULT OnEraseBackground(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)

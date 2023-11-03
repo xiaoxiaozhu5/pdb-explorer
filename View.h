@@ -118,6 +118,7 @@ public:
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged)
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
+	    CHAIN_COMMANDS_MEMBER(m_ctrlView)
 		END_MSG_MAP()
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)

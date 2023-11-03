@@ -94,6 +94,10 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT
     END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "&Find",                       ID_EDIT_FIND
+    END
     POPUP "&View"
     BEGIN
         MENUITEM "Go &Back",                    ID_NAV_BACK
@@ -140,6 +144,7 @@ END
 
 IDR_MAINFRAME ACCELERATORS
 BEGIN
+    "F",            ID_EDIT_FIND,           VIRTKEY, CONTROL, NOINVERT
     "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
     "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
     "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL

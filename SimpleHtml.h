@@ -42,6 +42,7 @@
   #pragma message("Warning: The SimpleHtmlCtrl is limited without RichEdit Version 2")
 #endif
 
+#include "finddlg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -688,8 +689,12 @@ public:
 // CSimpleHtmlCtrl - a subclassed RichEdit control
 
 template< class T, class TBase = CRichEditCtrl, class TWinTraits = CControlWinTraits >
-class CSimpleHtmlImpl : public CWindowImpl< T, TBase, TWinTraits >
+class CSimpleHtmlImpl : public CWindowImpl< T, TBase, TWinTraits >,
+    	public CRichEditFindReplaceImpl<T, CFindReplaceDialogWithMessageFilter>
 {
+protected:
+    typedef T thisClass;
+	typedef CRichEditFindReplaceImpl<T, CFindReplaceDialogWithMessageFilter> findReplaceClass;
 public:
    DECLARE_WND_SUPERCLASS(NULL, TBase::GetWndClassName())
 
@@ -701,6 +706,18 @@ public:
    CHtmlToRtf convert;
    COLORREF m_clrText;
    COLORREF m_clrBack;
+
+    BOOL PreTranslateMessage(MSG* pMsg)
+	{
+		// In non Multi-thread SDI cases, CFindReplaceDialogWithMessageFilter will add itself to the
+		// global message filters list.  In our case, we'll call it directly.
+		if(m_pFindReplaceDialog != NULL)
+		{
+			if(m_pFindReplaceDialog->PreTranslateMessage(pMsg))
+				return TRUE;
+		}
+		return FALSE;
+	}
 
    // Operations
 
@@ -821,10 +838,60 @@ public:
       return 0;
    }
 
+    // Overrides from CEditFindReplaceImpl
+	CFindReplaceDialogWithMessageFilter* CreateFindReplaceDialog(BOOL bFindOnly, // TRUE for Find, FALSE for FindReplace
+			LPCTSTR lpszFindWhat,
+			LPCTSTR lpszReplaceWith = NULL,
+			DWORD dwFlags = FR_DOWN,
+			HWND hWndParent = NULL)
+	{
+		// In non Multi-Threaded SDI cases, we'd pass in the message loop to CFindReplaceDialogWithMessageFilter.
+		// In our case, we'll call PreTranslateMessage directly from this class.
+		//CFindReplaceDialogWithMessageFilter* findReplaceDialog =
+		//	new CFindReplaceDialogWithMessageFilter(_Module.GetMessageLoop());
+		CFindReplaceDialogWithMessageFilter* findReplaceDialog =
+			new CFindReplaceDialogWithMessageFilter(NULL);
+
+		if(findReplaceDialog == NULL)
+		{
+			::MessageBeep(MB_ICONHAND);
+		}
+		else
+		{
+			HWND hWndFindReplace = findReplaceDialog->Create(bFindOnly,
+				lpszFindWhat, lpszReplaceWith, dwFlags, hWndParent);
+			if(hWndFindReplace == NULL)
+			{
+				delete findReplaceDialog;
+				findReplaceDialog = NULL;
+			}
+			else
+			{
+				findReplaceDialog->SetActiveWindow();
+				findReplaceDialog->ShowWindow(SW_SHOW);
+			}
+		}
+
+		return findReplaceDialog;
+	}
+
+    DWORD GetFindReplaceDialogFlags() const
+	{
+		DWORD dwFlags = FR_HIDEWHOLEWORD;
+
+		if(m_bFindDown)
+			dwFlags |= FR_DOWN;
+		if(m_bMatchCase)
+			dwFlags |= FR_MATCHCASE;
+
+		return dwFlags;
+	}
+
    // Message map and handlers
 
    BEGIN_MSG_MAP(CSimpleHtmlCtrl)
       MESSAGE_HANDLER(WM_CREATE, OnCreate)
+	  CHAIN_MSG_MAP_ALT(findReplaceClass, 1)
    END_MSG_MAP()
 
    LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
@@ -835,7 +902,6 @@ public:
       return lRet;
    }
 };
-
 
 class CSimpleHtmlCtrl : public CSimpleHtmlImpl<CSimpleHtmlCtrl>
 {
