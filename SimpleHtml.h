@@ -55,7 +55,7 @@ public:
       TCHAR szURL[128];
       int nStart;
       int nEnd;
-   };
+   }LINK;
 protected:
    typedef struct CONTEXT
    {
@@ -70,7 +70,7 @@ protected:
       int lRightIndent;
       int lTopIndent;
       int lBottomIndent;
-   };
+   }CONTEXT;
    CSimpleValArray<LOGFONT> m_aFonts;
    CSimpleValArray<COLORREF> m_aColors;
    CSimpleValArray<LINK> m_aLinks;
@@ -87,8 +87,8 @@ public:
       // We assume that we can create a corretly sized output
       // buffer before we convert HTML to RTF...
       const int SIZE_FACTOR = 2;
-      unsigned int nTextSize = _tcslen(pstrHTML);
-      unsigned int nSize = nTextSize * SIZE_FACTOR;
+      size_t nTextSize = _tcslen(pstrHTML);
+      size_t nSize = nTextSize * SIZE_FACTOR;
       if( nSize < 1000 ) nSize = 1000;
       LPTSTR pstrBuffer = (LPTSTR) malloc( nSize*sizeof(TCHAR) );
       ATLASSERT(pstrBuffer);
@@ -702,7 +702,7 @@ public:
    {
       LPCSTR pstr;
       DWORD pos;
-   };
+   }RtfStream;
    CHtmlToRtf convert;
    COLORREF m_clrText;
    COLORREF m_clrBack;

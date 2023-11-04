@@ -4,6 +4,19 @@
 
 namespace PDB
 {
+#define PDB_PRAGMA(_x)									__pragma(_x)
+#define PDB_PUSH_WARNING_MSVC							PDB_PRAGMA(warning(push))
+#define PDB_SUPPRESS_WARNING_MSVC(_number)				PDB_PRAGMA(warning(suppress : _number))
+#define PDB_DISABLE_WARNING_MSVC(_number)				PDB_PRAGMA(warning(disable : _number))
+#define PDB_POP_WARNING_MSVC							PDB_PRAGMA(warning(pop))
+
+// Defines a C-like flexible array member.
+#define PDB_FLEXIBLE_ARRAY_MEMBER(_type, _name)				\
+	PDB_PUSH_WARNING_MSVC									\
+	PDB_DISABLE_WARNING_MSVC(4200)							\
+	_type _name[0];											\
+	PDB_POP_WARNING_MSVC									\
+
 	static constexpr const uint32_t InfoStreamIndex = 1u;
 
 	enum class Byte : unsigned char
@@ -23,7 +36,7 @@ namespace PDB
 		uint32_t blockCount; // number of blocks in the file
 		uint32_t directorySize; // size of the stream directory in bytes
 		uint32_t unknown;
-		uint32_t directoryBlockIndices[0]; // indices of the blocks that make up the directory indices
+		PDB_FLEXIBLE_ARRAY_MEMBER(uint32_t, directoryBlockIndices) // indices of the blocks that make up the directory indices
 	};
 
 	// https://github.com/Microsoft/microsoft-pdb/blob/master/PDB/msf/msf.cpp#L962
@@ -65,7 +78,7 @@ namespace PDB
 	struct NamedStreamMap
 	{
 		uint32_t length;
-		char stringTable[0];
+		PDB_FLEXIBLE_ARRAY_MEMBER(char, stringTable)
 
 		struct HashTableEntry
 		{

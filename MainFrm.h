@@ -2,14 +2,12 @@
 #include <stack>
 
 #define FILE_MENU_POSITION	0
-#define RECENT_MENU_POSITION	11
+#define RECENT_MENU_POSITION	2
 
 LPCTSTR lpcstrMTPadRegKey = _T("Software\\Microsoft\\PdbExplorer\\PdbExplorer");
 
 class CMainFrame :
 	public CRibbonFrameWindowImpl<CMainFrame>
-	//public CMessageFilter
-	//public CIdleHandler
 {
 public:
 	DECLARE_FRAME_WND_CLASS(NULL, IDR_MAINFRAME)
@@ -30,21 +28,9 @@ public:
 		return CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg);
 	}
 
-	//virtual BOOL OnIdle()
-	//{
-	//	UIUpdateToolBar();
-	//	return FALSE;
-	//}
-
 	BEGIN_RIBBON_CONTROL_MAP(CMainFrame)
 		RIBBON_CONTROL(m_mru)
 	END_RIBBON_CONTROL_MAP()
-
-
-	//BEGIN_UPDATE_UI_MAP(CMainFrame)
-	//	UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
-	//	UPDATE_ELEMENT(ID_VIEW_STATUS_BAR, UPDUI_MENUPOPUP)
-	//END_UPDATE_UI_MAP()
 
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
@@ -101,23 +87,22 @@ public:
 
 		m_hWndClient = m_view.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE, WS_EX_CLIENTEDGE);
 
-		UIAddToolBar(m_hWndToolBar);
+		UIAddToolBar(hWndToolBar);
 		UISetCheck(ID_VIEW_TOOLBAR, 1);
 		UISetCheck(ID_VIEW_STATUS_BAR, 1);
 
 		HMENU hMenu = m_CmdBar.GetMenu();
 		HMENU hFileMenu = ::GetSubMenu(hMenu, FILE_MENU_POSITION);
+#ifdef _DEBUG
+		// absolute position, can change if menu changes
+		TCHAR szMenuString[100];
+		::GetMenuString(hFileMenu, RECENT_MENU_POSITION, szMenuString, sizeof(szMenuString), MF_BYPOSITION);
+		ATLASSERT(lstrcmp(szMenuString, _T("Recent &Files")) == 0);
+#endif //_DEBUG
 		HMENU hMruMenu = ::GetSubMenu(hFileMenu, RECENT_MENU_POSITION);
 		m_mru.SetMenuHandle(hMruMenu);
 		m_mru.ReadFromRegistry(lpcstrMTPadRegKey);
-		ShowRibbonUI(true); 
-
-
-		// Register object for message filtering and idle updates
-		CMessageLoop* pLoop = _Module.GetMessageLoop();
-		ATLASSERT(pLoop != NULL);
-		//pLoop->AddMessageFilter(this);
-		//pLoop->AddIdleHandler(this);
+		ShowRibbonUI(bRibbonUI); 
 
 		return 0;
 	}
@@ -131,18 +116,12 @@ public:
 				SaveRibbonSettings();
 			CRibbonPersist(lpcstrMTPadRegKey).Save(bRibbonUI, m_hgRibbonSettings);
 		}
-		bHandled = TRUE;
+		bHandled = FALSE;
 		return 0;		
 	}
 
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 	{
-		// Unregister object for message filtering and idle updates
-		CMessageLoop* pLoop = _Module.GetMessageLoop();
-		ATLASSERT(pLoop != NULL);
-		//pLoop->RemoveMessageFilter(this);
-		//pLoop->RemoveIdleHandler(this);
-
 		bHandled = FALSE;
 		return 0;
 	}
@@ -152,11 +131,16 @@ public:
 		COMDLG_FILTERSPEC spec[] = {{L"PDB Files", L"*.pdb"}};
 		CShellFileOpenDialog dlg(NULL, FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST, _T("pdb"), spec,
 		                         _countof(spec));
-		dlg.DoModal();
-		CString sFilename;
-		dlg.GetFilePath(sFilename);
-		if (sFilename.IsEmpty()) return 0;
-		m_view.LoadFromFile(sFilename);
+		INT_PTR nRet = dlg.DoModal();
+		if(nRet == IDOK)
+		{
+			CString sFilename;
+			dlg.GetFilePath(sFilename);
+			if (sFilename.IsEmpty()) return 0;
+			m_view.LoadFromFile(sFilename);
+			m_mru.AddToList(sFilename);
+			m_mru.WriteToRegistry(lpcstrMTPadRegKey);
+		}
 		return 0;
 	}
 
