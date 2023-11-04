@@ -26,6 +26,7 @@
 #define ID_NVA_FOR                      4001
 #define ID_EDIT_MODIFY                  4002
 #define ID_APP_SETTING                  4003
+#define ID_RIBBON_RECENT_FILES			4004 
 #define ID_VIEW_GOBACK                  32774
 #define ID_VIEW_GONEXT                  32775
 

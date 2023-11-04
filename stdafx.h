@@ -5,8 +5,8 @@
 
 #pragma once
 
-#define WINVER         0x0600
-#define _WIN32_WINNT   0x0600
+#define WINVER         0x0601
+#define _WIN32_WINNT   0x0601
 #define _WIN32_IE      0x0700
 #define _RICHEDIT_VER  0x0300
 
@@ -44,4 +44,5 @@ extern CAppModule _Module;
 
 #define WM_SET_STATUS_TEXT (WM_USER + 1)
 #define WM_ADD_HISTORY     (WM_USER + 2)
+
 

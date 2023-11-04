@@ -1,12 +1,15 @@
 #pragma once
 #include <stack>
 
+#define FILE_MENU_POSITION	0
+#define RECENT_MENU_POSITION	11
+
+LPCTSTR lpcstrMTPadRegKey = _T("Software\\Microsoft\\PdbExplorer\\PdbExplorer");
 
 class CMainFrame :
-	public CFrameWindowImpl<CMainFrame>,
-	public CUpdateUI<CMainFrame>,
-	public CMessageFilter,
-	public CIdleHandler
+	public CRibbonFrameWindowImpl<CMainFrame>
+	//public CMessageFilter
+	//public CIdleHandler
 {
 public:
 	DECLARE_FRAME_WND_CLASS(NULL, IDR_MAINFRAME)
@@ -14,29 +17,38 @@ public:
 	CBrowserView m_view;
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CCommandBarCtrl m_CmdBar;
+	CRibbonRecentItemsCtrl<ID_RIBBON_RECENT_FILES> m_mru;
 
 	std::stack<CString> m_QueBack;
 	std::stack<CString> m_QueNext;
 
-	virtual BOOL PreTranslateMessage(MSG* pMsg)
+	BOOL PreTranslateMessage(MSG* pMsg)
 	{
-		if (CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg)) return TRUE;
-		return m_view.PreTranslateMessage(pMsg);
+		if(m_view.PreTranslateMessage(pMsg))
+			return TRUE;
+
+		return CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg);
 	}
 
-	virtual BOOL OnIdle()
-	{
-		UIUpdateToolBar();
-		return FALSE;
-	}
+	//virtual BOOL OnIdle()
+	//{
+	//	UIUpdateToolBar();
+	//	return FALSE;
+	//}
 
-	BEGIN_UPDATE_UI_MAP(CMainFrame)
-		UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_VIEW_STATUS_BAR, UPDUI_MENUPOPUP)
-		END_UPDATE_UI_MAP()
+	BEGIN_RIBBON_CONTROL_MAP(CMainFrame)
+		RIBBON_CONTROL(m_mru)
+	END_RIBBON_CONTROL_MAP()
+
+
+	//BEGIN_UPDATE_UI_MAP(CMainFrame)
+	//	UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
+	//	UPDATE_ELEMENT(ID_VIEW_STATUS_BAR, UPDUI_MENUPOPUP)
+	//END_UPDATE_UI_MAP()
 
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
+	    MESSAGE_HANDLER(WM_CLOSE, OnClose)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_SET_STATUS_TEXT, OnSetStatusBarText)
 		MESSAGE_HANDLER(WM_ADD_HISTORY, OnAddHistory)
@@ -46,12 +58,12 @@ public:
 		COMMAND_ID_HANDLER(ID_FILE_SAVE, OnSave)
 		COMMAND_ID_HANDLER(ID_NAV_BACK, OnBack)
 		COMMAND_ID_HANDLER(ID_NVA_FOR, OnNext)
+	    COMMAND_RANGE_HANDLER(ID_FILE_MRU_FIRST, ID_FILE_MRU_LAST, OnFileRecent)
 		COMMAND_ID_HANDLER(ID_VIEW_REFRESH, OnViewRefresh)
 		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
 		COMMAND_ID_HANDLER(ID_VIEW_STATUS_BAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
-		CHAIN_MSG_MAP(CUpdateUI<CMainFrame>)
-		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
+		CHAIN_MSG_MAP(CRibbonFrameWindowImpl<CMainFrame>)
 	    CHAIN_COMMANDS_MEMBER(m_view)
 		END_MSG_MAP()
 
@@ -65,6 +77,17 @@ public:
 		m_CmdBar.LoadImages(IDR_MAINFRAME);
 		// Remove old menu
 		SetMenu(NULL);
+
+		bool bRibbonUI = RunTimeHelper::IsRibbonUIAvailable();
+		if (bRibbonUI) 
+		{
+			// UI Setup and adjustments
+			UIAddMenu(m_CmdBar.GetMenu(), true);
+			UIRemoveUpdateElement(ID_FILE_MRU_FIRST);
+
+			// Ribbon UI state and settings restoration
+			CRibbonPersist(lpcstrMTPadRegKey).Restore(bRibbonUI, m_hgRibbonSettings);
+		}
 
 		HWND hWndToolBar = CreateSimpleToolBarCtrl(m_hWnd, IDR_MAINFRAME, FALSE, ATL_SIMPLE_TOOLBAR_PANE_STYLE);
 		ATLASSERT(::IsWindow(hWndToolBar));
@@ -82,13 +105,34 @@ public:
 		UISetCheck(ID_VIEW_TOOLBAR, 1);
 		UISetCheck(ID_VIEW_STATUS_BAR, 1);
 
+		HMENU hMenu = m_CmdBar.GetMenu();
+		HMENU hFileMenu = ::GetSubMenu(hMenu, FILE_MENU_POSITION);
+		HMENU hMruMenu = ::GetSubMenu(hFileMenu, RECENT_MENU_POSITION);
+		m_mru.SetMenuHandle(hMruMenu);
+		m_mru.ReadFromRegistry(lpcstrMTPadRegKey);
+		ShowRibbonUI(true); 
+
+
 		// Register object for message filtering and idle updates
 		CMessageLoop* pLoop = _Module.GetMessageLoop();
 		ATLASSERT(pLoop != NULL);
-		pLoop->AddMessageFilter(this);
-		pLoop->AddIdleHandler(this);
+		//pLoop->AddMessageFilter(this);
+		//pLoop->AddIdleHandler(this);
 
 		return 0;
+	}
+
+	LRESULT OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+	{
+		if (RunTimeHelper::IsRibbonUIAvailable())
+		{
+			bool bRibbonUI = IsRibbonUI();
+			if (bRibbonUI)
+				SaveRibbonSettings();
+			CRibbonPersist(lpcstrMTPadRegKey).Save(bRibbonUI, m_hgRibbonSettings);
+		}
+		bHandled = TRUE;
+		return 0;		
 	}
 
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
@@ -96,8 +140,8 @@ public:
 		// Unregister object for message filtering and idle updates
 		CMessageLoop* pLoop = _Module.GetMessageLoop();
 		ATLASSERT(pLoop != NULL);
-		pLoop->RemoveMessageFilter(this);
-		pLoop->RemoveIdleHandler(this);
+		//pLoop->RemoveMessageFilter(this);
+		//pLoop->RemoveIdleHandler(this);
 
 		bHandled = FALSE;
 		return 0;
@@ -212,6 +256,35 @@ public:
 		return 0;
 	}
 
+	LRESULT OnFileRecent(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+	{
+		// get file name from the MRU list
+		TCHAR szFile[MAX_PATH];
+		if (m_mru.GetFromList(wID, szFile, MAX_PATH))
+		{
+			// find file name without the path
+			LPTSTR lpstrFileName = szFile;
+			for (int i = lstrlen(szFile) - 1; i >= 0; i--)
+			{
+				if (szFile[i] == '\\')
+				{
+					lpstrFileName = &szFile[i + 1];
+					break;
+				}
+			}
+			// open file
+			m_view.LoadFromFile(szFile);
+			m_mru.MoveToTop(wID);
+			m_mru.WriteToRegistry(lpcstrMTPadRegKey);
+		}
+		else
+		{
+			::MessageBeep(MB_ICONERROR);
+		}
+
+		return 0;
+	}
+
 	LRESULT OnViewRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 	{
 		return 0;
@@ -253,5 +326,10 @@ public:
 		m_QueBack.push((BSTR)wParam);
 		SysFreeString((BSTR)wParam);
 		return 0;
+	}
+
+	void UpdateUIAll()
+	{
+		UIUpdateToolBar();
 	}
 };
