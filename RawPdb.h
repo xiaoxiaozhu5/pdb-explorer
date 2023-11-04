@@ -99,7 +99,7 @@ namespace PDB
 		struct BitVector
 		{
 			uint32_t wordCount;
-			uint32_t words[0];
+			PDB_FLEXIBLE_ARRAY_MEMBER(uint32_t, words)
 		};
 	};
 
@@ -260,10 +260,10 @@ namespace PDB
 				const Byte* bytePointer = reinterpret_cast<const Byte*>(pointer);
 				const Byte* dataEnd = data_ + size_;
 
-				_ASSERT(bytePointer >= data_ && bytePointer <= dataEnd,
-				           "Pointer 0x%016" PRIXPTR " not within stream range [0x%016" PRIXPTR ":0x%016" PRIXPTR "]",
-				           reinterpret_cast<uintptr_t>(bytePointer), reinterpret_cast<uintptr_t>(m_data),
-				           reinterpret_cast<uintptr_t>(dataEnd));
+				//_ASSERT(bytePointer >= data_ && bytePointer <= dataEnd,
+				//           "Pointer 0x%016" PRIXPTR " not within stream range [0x%016" PRIXPTR ":0x%016" PRIXPTR "]",
+				//           reinterpret_cast<uintptr_t>(bytePointer), reinterpret_cast<uintptr_t>(m_data),
+				//           reinterpret_cast<uintptr_t>(dataEnd));
 
 				return static_cast<size_t>(bytePointer - data_);
 			}

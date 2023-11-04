@@ -10,6 +10,7 @@ enum
 #include "DiaInfo.h"
 
 #include "SimpleHtml.h"
+#include "DlgTabCtrl.h"
 #include "RawPdb.h"
 
 
@@ -30,6 +31,7 @@ public:
 	CString m_path;
 	CTreeViewCtrl m_ctrlTree;
 	CSimpleHtmlCtrl m_ctrlView;
+	CDlgContainerCtrl m_ctrlContainer;
 	//CAnimateCtrl m_ctrlHourglass;
 
 	CPdbCollector m_collector;
@@ -118,7 +120,9 @@ public:
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged)
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
+		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnFind)
 	    CHAIN_COMMANDS_MEMBER(m_ctrlView)
+	    REFLECT_NOTIFICATIONS()
 		END_MSG_MAP()
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
@@ -130,6 +134,9 @@ public:
 					      ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_NOHIDESEL |
 			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
 			0,IDC_TREE);
+		m_ctrlContainer.Create(m_hWnd, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+		m_ctrlContainer.AddItem(m_ctrlTree);
+		m_ctrlContainer.SetCurSel(0);
 		/*
 		RECT rcAnim = {10, 10, 10 + 32, 10 + 32};
 		m_ctrlHourglass.Create(m_ctrlView, rcAnim, _T(""), WS_CHILD | ACS_CENTER | ACS_TRANSPARENT, 0, IDC_HOURGLASS);
@@ -140,7 +147,7 @@ public:
 		m_ctrlHourglass.SetWindowRgn(m_rgnWaitAnim, FALSE);
 		*/
 		SetSplitterPosPct(20);
-		SetSplitterPanes(m_ctrlTree, m_ctrlView);
+		SetSplitterPanes(m_ctrlContainer, m_ctrlView);
 		bHandled = FALSE;
 
 		return 0;
@@ -262,6 +269,21 @@ public:
 					m_ctrlView.Load(sRTF);
 				}
 			}
+		}
+		return 0;
+	}
+
+	LRESULT OnFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+	{
+		bHandled = TRUE;
+		HWND hWndCtl = ::GetFocus();
+		if(hWndCtl == m_ctrlView)
+		{
+			bHandled = FALSE;
+		}
+		else
+		{
+			//TODO: symbol search
 		}
 		return 0;
 	}
