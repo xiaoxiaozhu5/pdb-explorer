@@ -13,6 +13,9 @@
 #define IDS_TYPE_UDT                    135
 #define IDS_TYPE_ENUM                   136
 #define IDS_TYPE_TYPEDEF                137
+#define IDD_SEARCH_VIEW                 201
+#define IDC_COMBO_SEARCH                1000
+#define IDC_LIST_FOUND                  1004
 #define IDC_SHELLTREE                   3000
 #define IDC_NAMES                       3001
 #define IDC_ATTRIBUTES                  3002
@@ -35,9 +38,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        201
+#define _APS_NEXT_RESOURCE_VALUE        204
 #define _APS_NEXT_COMMAND_VALUE         32778
-#define _APS_NEXT_CONTROL_VALUE         1000
+#define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

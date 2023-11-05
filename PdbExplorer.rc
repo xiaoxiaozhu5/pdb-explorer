@@ -94,7 +94,7 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Recent &Files"
         BEGIN
-            MENUITEM "(empty)",                 ID_FILE_MRU_FILE1, GRAYED
+            MENUITEM "(empty)",                     ID_FILE_MRU_FILE1, GRAYED
         END
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT

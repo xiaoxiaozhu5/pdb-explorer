@@ -11,6 +11,7 @@ enum
 
 #include "SimpleHtml.h"
 #include "DlgTabCtrl.h"
+#include "CSearchView.h"
 #include "RawPdb.h"
 
 
@@ -32,6 +33,7 @@ public:
 	CTreeViewCtrl m_ctrlTree;
 	CSimpleHtmlCtrl m_ctrlView;
 	CDlgContainerCtrl m_ctrlContainer;
+	CSearchView m_ctrlSearch;
 	//CAnimateCtrl m_ctrlHourglass;
 
 	CPdbCollector m_collector;
@@ -121,9 +123,11 @@ public:
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnFind)
+	    COMMAND_ID_HANDLER(IDOK, OnOk)
+        COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
 	    CHAIN_COMMANDS_MEMBER(m_ctrlView)
 	    REFLECT_NOTIFICATIONS()
-		END_MSG_MAP()
+	END_MSG_MAP()
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 	{
@@ -134,8 +138,10 @@ public:
 					      ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_NOHIDESEL |
 			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
 			0,IDC_TREE);
-		m_ctrlContainer.Create(m_hWnd, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | CBS_SORT | WS_VSCROLL | CBS_NOINTEGRALHEIGHT, &rcDefault, m_hWnd, 0);
+		m_ctrlContainer.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_ctrlContainer.AddItem(m_ctrlTree);
+		m_ctrlContainer.AddItem(m_ctrlSearch);
 		m_ctrlContainer.SetCurSel(0);
 		/*
 		RECT rcAnim = {10, 10, 10 + 32, 10 + 32};
@@ -281,10 +287,21 @@ public:
 		{
 			bHandled = FALSE;
 		}
-		else
+		else if(hWndCtl == m_ctrlTree)
 		{
-			//TODO: symbol search
+			m_ctrlContainer.SetCurSel(1);
 		}
+		return 0;
+	}
+
+	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+	{
+		return 0;
+	}
+
+	LRESULT OnCancel(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+	{
+		m_ctrlContainer.SetCurSel(0);
 		return 0;
 	}
 

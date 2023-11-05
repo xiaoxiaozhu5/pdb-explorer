@@ -188,6 +188,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Collector.h" />
+    <ClInclude Include="CSearchView.h" />
     <ClInclude Include="DiaInfo.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="MainFrm.h" />
