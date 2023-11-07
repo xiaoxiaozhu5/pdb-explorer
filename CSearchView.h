@@ -1,4 +1,5 @@
 #pragma once
+#include "levenshtein.h"
 
 class CSearchView : public CWindowImpl<CSearchView, CComboBox>
 {
@@ -9,7 +10,7 @@ public:
 
     CSearchView() : m_list(this, 0)
     {
-	    
+        m_symbols = NULL;
     }
 
     BOOL Create(DWORD dwStyle, LPRECT lpRect, HWND hWndParent, UINT nID)
@@ -27,6 +28,11 @@ public:
 	    return m_list.FindString(0, lpszString);
     }
 
+    void SetDataSource(const CAtlArray<PDBSYMBOL>* symbols)
+    {
+        m_symbols = symbols;
+    }
+
     BEGIN_MSG_MAP(CSearchView)
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
         COMMAND_CODE_HANDLER(EN_UPDATE, OnEditUpdate)
@@ -41,13 +47,27 @@ private:
 		CString str;
 		int nLength = m_edit.GetWindowText(str);
 		if (nLength > 0) {
-			int idx = FindString(str);
-			if (CB_ERR != idx) {
-				// Must use CListBoxT::SetCurSel,
-				// because CComboBoxT::SetCurSel will change edit's text.
-				m_list.SetCurSel(idx);
-				m_edit.SetSel(nLength, -1);
-			}
+            CString find;
+            int shortest_distance = levenshteinDistance(m_symbols->GetAt(0).sKey, str);
+            for(int i = 0; i < m_symbols->GetCount(); ++i)
+            {
+	            int distance = levenshteinDistance(m_symbols->GetAt(i).sKey, str);
+                if(distance < shortest_distance)
+                {
+	                shortest_distance = distance;
+                    find = m_symbols->GetAt(i).sKey;
+                }
+            }
+
+            AddString(find);
+
+			//int idx = FindString(str);
+			//if (CB_ERR != idx) {
+			//	// Must use CListBoxT::SetCurSel,
+			//	// because CComboBoxT::SetCurSel will change edit's text.
+			//	m_list.SetCurSel(idx);
+			//	m_edit.SetSel(nLength, -1);
+			//}
 		}
         return 0;
     }
@@ -62,10 +82,11 @@ private:
 
     LRESULT OnListLButtonDblClk(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
     {
-		GetParent().SendMessage(WM_COMMAND, IDOK, (LPARAM)m_hWnd);
+    	::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
 		return 0;
     }
 
+    const CAtlArray<PDBSYMBOL> *m_symbols;
     CContainedWindowT<CListBox> m_list;
     CEdit m_edit;
 };

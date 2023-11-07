@@ -177,6 +177,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="levenshtein.cpp" />
     <ClCompile Include="PdbExplorer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -190,6 +191,7 @@
     <ClInclude Include="Collector.h" />
     <ClInclude Include="CSearchView.h" />
     <ClInclude Include="DiaInfo.h" />
+    <ClInclude Include="levenshtein.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="PdbExplorer.h" />

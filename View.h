@@ -289,6 +289,7 @@ public:
 		}
 		else if(hWndCtl == m_ctrlTree)
 		{
+			m_ctrlSearch.SetDataSource(&m_collector.m_aSymbols);
 			m_ctrlContainer.SetCurSel(1);
 		}
 		return 0;
