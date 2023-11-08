@@ -85,6 +85,11 @@ public:
 		m_collector.Init(m_hWnd, pstrFilename);
 		m_collector.Start();
 
+		m_ctrlSearch.Abort();
+		m_ctrlSearch.Stop();
+		m_ctrlSearch.SetDataSource(&m_collector);
+		m_ctrlSearch.Start();
+
 		m_lLastSize = 0;
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
 	}
@@ -138,11 +143,12 @@ public:
 					      ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_NOHIDESEL |
 			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
 			0,IDC_TREE);
-		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | CBS_SORT | WS_VSCROLL | CBS_NOINTEGRALHEIGHT, &rcDefault, m_hWnd, 0);
+		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT, &rcDefault, m_hWnd, 0);
 		m_ctrlContainer.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_ctrlContainer.AddItem(m_ctrlTree);
 		m_ctrlContainer.AddItem(m_ctrlSearch);
 		m_ctrlContainer.SetCurSel(0);
+
 		/*
 		RECT rcAnim = {10, 10, 10 + 32, 10 + 32};
 		m_ctrlHourglass.Create(m_ctrlView, rcAnim, _T(""), WS_CHILD | ACS_CENTER | ACS_TRANSPARENT, 0, IDC_HOURGLASS);
@@ -289,7 +295,6 @@ public:
 		}
 		else if(hWndCtl == m_ctrlTree)
 		{
-			m_ctrlSearch.SetDataSource(&m_collector.m_aSymbols);
 			m_ctrlContainer.SetCurSel(1);
 		}
 		return 0;

@@ -1,24 +1,27 @@
 #pragma once
 #include "levenshtein.h"
 
-class CSearchView : public CWindowImpl<CSearchView, CComboBox>
+class CSearchView : public CWindowImpl<CSearchView, CComboBox>,
+					public CThreadImpl<CSearchView>
 {
 	typedef CWindowImpl<CSearchView, CComboBox> BaseComboBox;
 
 public:
     DECLARE_WND_CLASS(NULL)
 
-    CSearchView() : m_list(this, 0)
+    CSearchView() : m_list(this, 0),
+					m_symbols(NULL),
+					m_count(0)
     {
-        m_symbols = NULL;
     }
 
     BOOL Create(DWORD dwStyle, LPRECT lpRect, HWND hWndParent, UINT nID)
     {
-		if (NULL == BaseComboBox::Create(hWndParent, *lpRect, NULL, dwStyle, 0, nID))
+        auto hCom = BaseComboBox::Create(hWndParent, *lpRect, NULL, dwStyle, 0, nID);
+		if (NULL == hCom)
 			return FALSE;
-		m_list.SubclassWindow(FindWindowEx(m_hWnd, NULL, _T("ComboLBox"), NULL));
-		m_edit = FindWindowEx(m_hWnd, NULL, WC_EDIT, NULL);
+		m_list.SubclassWindow(hCom);
+		m_edit = FindWindowEx(hCom, NULL, WC_EDIT, NULL);
 
 		return TRUE;
     }
@@ -28,13 +31,46 @@ public:
 	    return m_list.FindString(0, lpszString);
     }
 
-    void SetDataSource(const CAtlArray<PDBSYMBOL>* symbols)
+    void SetDataSource(CPdbCollector* collector)
     {
-        m_symbols = symbols;
+        m_edit.Clear();
+        m_list.ResetContent();
+        //while(m_list.DeleteString(0));
+        m_symbols = collector;
+    }
+
+    DWORD Run()
+    {
+        while(!IsAborted())
+        {
+			if (IsAborted()) Abort();
+
+			CAtlArray<PDBSYMBOL> tmp_symbols;
+			{
+				CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
+				tmp_symbols.Copy(m_symbols->m_aSymbols);
+			}
+			size_t old = m_count;
+			size_t update = tmp_symbols.GetCount();
+			if (update > old)
+			{
+				for (size_t i = m_count; i < update; ++i)
+				{
+					if (IsAborted()) Abort();
+					AddString(tmp_symbols.GetAt(i).sKey);
+				}
+				m_count = update;
+			}
+
+			Sleep(200);
+        }
+
+        return 0;
     }
 
     BEGIN_MSG_MAP(CSearchView)
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
+	    MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
         COMMAND_CODE_HANDLER(EN_UPDATE, OnEditUpdate)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
     END_MSG_MAP()
@@ -47,27 +83,13 @@ private:
 		CString str;
 		int nLength = m_edit.GetWindowText(str);
 		if (nLength > 0) {
-            CString find;
-            int shortest_distance = levenshteinDistance(m_symbols->GetAt(0).sKey, str);
-            for(int i = 0; i < m_symbols->GetCount(); ++i)
-            {
-	            int distance = levenshteinDistance(m_symbols->GetAt(i).sKey, str);
-                if(distance < shortest_distance)
-                {
-	                shortest_distance = distance;
-                    find = m_symbols->GetAt(i).sKey;
-                }
-            }
-
-            AddString(find);
-
-			//int idx = FindString(str);
-			//if (CB_ERR != idx) {
-			//	// Must use CListBoxT::SetCurSel,
-			//	// because CComboBoxT::SetCurSel will change edit's text.
-			//	m_list.SetCurSel(idx);
-			//	m_edit.SetSel(nLength, -1);
-			//}
+			int idx = FindString(str);
+			if (CB_ERR != idx) {
+				// Must use CListBoxT::SetCurSel,
+				// because CComboBoxT::SetCurSel will change edit's text.
+				m_list.SetCurSel(idx);
+				m_edit.SetSel(nLength, -1);
+			}
 		}
         return 0;
     }
@@ -86,7 +108,29 @@ private:
 		return 0;
     }
 
-    const CAtlArray<PDBSYMBOL> *m_symbols;
+   LRESULT OnEraseBkgnd(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+   {
+	   CDCHandle dc((HDC)wParam);
+	   RECT rc;
+	   GetClientRect(&rc);
+	   CRgn rgn1, rgn2, rgn;
+	   rgn1.CreateRectRgnIndirect(&rc);
+	   AdjustRect(FALSE, &rc);
+	   rgn2.CreateRectRgnIndirect(&rc);
+	   rgn.CreateRectRgnIndirect(&rc);
+	   rgn.CombineRgn(rgn1, rgn2, RGN_DIFF);
+	   dc.FillRgn(rgn, ::GetSysColorBrush(COLOR_BTNFACE));
+       return TRUE;
+   }
+
+   	void AdjustRect(BOOL bLarger, LPRECT lpRect)
+	{
+		ATLASSERT(::IsWindow(m_hWnd));
+		::SendMessage(m_hWnd, TCM_ADJUSTRECT, bLarger, (LPARAM)lpRect);
+	}
+
+    size_t m_count;
+    CPdbCollector* m_symbols;
     CContainedWindowT<CListBox> m_list;
     CEdit m_edit;
 };

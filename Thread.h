@@ -327,7 +327,7 @@ public:
 
 	// Overridables
 
-	DWORD Run()
+	virtual DWORD Run()
 	{
 		_ASSERTE(false); // must override this
 		//
