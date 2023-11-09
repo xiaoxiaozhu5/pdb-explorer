@@ -50,7 +50,8 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_STATUS_BAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 		CHAIN_MSG_MAP(CRibbonFrameWindowImpl<CMainFrame>)
-	    CHAIN_COMMANDS_MEMBER(m_view)
+	    //CHAIN_COMMANDS_MEMBER(m_view)
+		CHAIN_COMMANDS_ALT_MEMBER(m_view, 1)
 		END_MSG_MAP()
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)

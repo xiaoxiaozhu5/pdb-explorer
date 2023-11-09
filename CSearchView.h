@@ -15,9 +15,9 @@ public:
     {
     }
 
-    BOOL Create(DWORD dwStyle, LPRECT lpRect, HWND hWndParent, UINT nID)
+    BOOL Create(DWORD dwStyle, RECT lpRect, HWND hWndParent, UINT nID)
     {
-        auto hCom = BaseComboBox::Create(hWndParent, *lpRect, NULL, dwStyle, 0, nID);
+        auto hCom = BaseComboBox::Create(hWndParent, lpRect, NULL, dwStyle, 0, nID);
 		if (NULL == hCom)
 			return FALSE;
 		m_list.SubclassWindow(hCom);

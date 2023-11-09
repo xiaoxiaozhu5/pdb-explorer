@@ -127,10 +127,12 @@ public:
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged)
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
+		ALT_MSG_MAP(1)
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnFind)
 	    COMMAND_ID_HANDLER(IDOK, OnOk)
         COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
-	    CHAIN_COMMANDS_MEMBER(m_ctrlView)
+	    //CHAIN_COMMANDS_MEMBER(m_ctrlView)
+		//FORWARD_NOTIFICATIONS()
 	    REFLECT_NOTIFICATIONS()
 	END_MSG_MAP()
 
@@ -143,7 +145,7 @@ public:
 					      ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_NOHIDESEL |
 			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
 			0,IDC_TREE);
-		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT, &rcDefault, m_hWnd, 0);
+		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT, rcDefault, m_hWnd, 0);
 		m_ctrlContainer.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_ctrlContainer.AddItem(m_ctrlTree);
 		m_ctrlContainer.AddItem(m_ctrlSearch);
