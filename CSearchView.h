@@ -1,6 +1,8 @@
 #pragma once
 #include "levenshtein.h"
 
+#include "tsqueue.h"
+
 class CSearchView : public CWindowImpl<CSearchView, CComboBox>,
 					public CThreadImpl<CSearchView>
 {
@@ -9,19 +11,23 @@ class CSearchView : public CWindowImpl<CSearchView, CComboBox>,
 public:
     DECLARE_WND_CLASS(NULL)
 
-    CSearchView() : m_list(this, 0),
-					m_symbols(NULL),
-					m_count(0)
+	struct task
+    {
+	    CString text;
+    };
+	tsqueue<task> tasks_;
+
+    CSearchView() : m_list(this, 1),
+					m_symbols(NULL)
     {
     }
 
     BOOL Create(DWORD dwStyle, RECT lpRect, HWND hWndParent, UINT nID)
     {
-        auto hCom = BaseComboBox::Create(hWndParent, lpRect, NULL, dwStyle, 0, nID);
-		if (NULL == hCom)
+        if(NULL == BaseComboBox::Create(hWndParent, lpRect, NULL, dwStyle, 0, nID))
 			return FALSE;
-		m_list.SubclassWindow(hCom);
-		m_edit = FindWindowEx(hCom, NULL, WC_EDIT, NULL);
+		m_list.SubclassWindow(FindWindowEx(m_hWnd, NULL, _T("ComboLBox"), NULL));
+		m_edit = FindWindowEx(m_hWnd, NULL, WC_EDIT, NULL);
 
 		return TRUE;
     }
@@ -35,8 +41,8 @@ public:
     {
         m_edit.Clear();
         m_list.ResetContent();
+		m_symbols = collector;
         //while(m_list.DeleteString(0));
-        m_symbols = collector;
     }
 
     DWORD Run()
@@ -45,24 +51,46 @@ public:
         {
 			if (IsAborted()) Abort();
 
+			int res = tasks_.wait(100);
+			if (!res)
+			{
+				if (IsAborted()) Abort();
+				continue;
+			}
+
+			m_list.ResetContent();
+
+			auto task = tasks_.pop_front();
+
 			CAtlArray<PDBSYMBOL> tmp_symbols;
 			{
 				CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
 				tmp_symbols.Copy(m_symbols->m_aSymbols);
 			}
-			size_t old = m_count;
-			size_t update = tmp_symbols.GetCount();
-			if (update > old)
-			{
-				for (size_t i = m_count; i < update; ++i)
-				{
-					if (IsAborted()) Abort();
-					AddString(tmp_symbols.GetAt(i).sKey);
-				}
-				m_count = update;
-			}
 
-			Sleep(200);
+			const int threshold = 100;
+			int shortest = 88;
+			int index = 0;
+			int shortest_index = 0;
+			for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
+			{
+				if (IsAborted()) Abort();
+				int distance = levenshteinDistance(task.text, tmp_symbols.GetAt(i).sKey);
+				if(distance < threshold)
+				{
+					index = AddString(tmp_symbols.GetAt(i).sKey);
+				}
+				if(distance < shortest)
+				{
+					shortest = distance;
+					if(index != CB_ERR)
+					{
+						shortest_index = index;
+					}
+				}
+			}
+        	m_list.SetCurSel(shortest_index);
+			LogOut(TEXT("total:%d"), m_list.GetCount());
         }
 
         return 0;
@@ -72,6 +100,7 @@ public:
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
 	    MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
         COMMAND_CODE_HANDLER(EN_UPDATE, OnEditUpdate)
+		ALT_MSG_MAP(1)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
     END_MSG_MAP()
 
@@ -82,15 +111,7 @@ private:
 
 		CString str;
 		int nLength = m_edit.GetWindowText(str);
-		if (nLength > 0) {
-			int idx = FindString(str);
-			if (CB_ERR != idx) {
-				// Must use CListBoxT::SetCurSel,
-				// because CComboBoxT::SetCurSel will change edit's text.
-				m_list.SetCurSel(idx);
-				m_edit.SetSel(nLength, -1);
-			}
-		}
+		tasks_.push_back({str});
         return 0;
     }
 
@@ -129,8 +150,7 @@ private:
 		::SendMessage(m_hWnd, TCM_ADJUSTRECT, bLarger, (LPARAM)lpRect);
 	}
 
-    size_t m_count;
     CPdbCollector* m_symbols;
     CContainedWindowT<CListBox> m_list;
-    CEdit m_edit;
+    CRichEditCtrl m_edit;
 };
