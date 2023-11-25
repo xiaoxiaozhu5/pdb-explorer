@@ -418,7 +418,7 @@ BOOL CSymUDT::GetType(__out CString* str)
     m_sym->get_name(&bsName);
     CString validate_name = ValidateName(bsName.m_str);
     str->Format(L"<font color=blue>%s</font> <a href=\"sym://%s\">%s</a>",
-        kind, bsName, validate_name);
+        kind, validate_name, validate_name);
     return TRUE;
 }
 
@@ -453,7 +453,7 @@ BOOL CSymEnum::GetType(__out CString* str)
     m_sym->get_symIndexId(&id);
     CString validate_name = ValidateName(bsName.m_str);
     str->Format(L"<font color=blue>enum</font> <a href=\"sym://%s\">%s</a>",
-        bsName, validate_name);
+        validate_name, validate_name);
     return TRUE;
 }
 

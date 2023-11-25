@@ -52,7 +52,7 @@ class CHtmlToRtf
 {
 public:
    typedef struct LINK {
-      TCHAR szURL[128];
+      TCHAR szURL[4096];
       int nStart;
       int nEnd;
    }LINK;
@@ -177,8 +177,8 @@ public:
       m_nCharPos = 0;
 
       LINK Link;
-      TCHAR szAppendScope[1024];             // Attribute string currently being built
-      TCHAR szValue[128];                    // Tag value buffer
+      TCHAR szAppendScope[4096];             // Attribute string currently being built
+      TCHAR szValue[4096];                    // Tag value buffer
 
       while( *pszStart ) {
          // Add text before next tag
@@ -188,7 +188,7 @@ public:
          pszStart++;
 
          // Extract the complete start-tag
-         TCHAR szTag[128];
+         TCHAR szTag[4096];
          LPTSTR pszTag = szTag;
          while( *pszStart && *pszStart!=_T('>') ) *pszTag++ = *pszStart++;
          ATLASSERT(*pszStart == _T('>'));
@@ -197,7 +197,7 @@ public:
          //::CharLowerBuff(szTag, _tcslen(szTag));
 
          // Extract the tag-name
-         TCHAR szTagName[16];
+         TCHAR szTagName[4096];
          LPTSTR pszTagName = szTagName;
          pszTag = szTag;
          while( *pszTag && (*pszTag == _T('/') || _istalnum(*pszTag)) ) *pszTagName++ = *pszTag++;

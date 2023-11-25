@@ -107,17 +107,25 @@ public:
 private:
     LRESULT OnEditUpdate(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
     {
-		ATLASSERT(m_edit.m_hWnd == hWndCtl);
+		//ATLASSERT(m_edit.m_hWnd == hWndCtl);
 
-		CString str;
-		int nLength = m_edit.GetWindowText(str);
-		tasks_.push_back({str});
+		//CString str;
+		//int nLength = m_edit.GetWindowText(str);
+		//tasks_.push_back({str});
         return 0;
     }
 
     LRESULT OnKeyDown(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
     {
-		if (VK_RETURN == wParam) ::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
+		if (VK_RETURN == wParam)
+		{
+			CString text;
+			if(0 < this->GetWindowText(text))
+			{
+				AddString(text);
+			}
+			::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
+		}
 		if (VK_ESCAPE == wParam) ::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDCANCEL, 0), reinterpret_cast<LPARAM>(m_hWnd));
 		bHandled = FALSE;
 		return 0;

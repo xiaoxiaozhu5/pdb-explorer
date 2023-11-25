@@ -14,6 +14,18 @@ enum
 #include "CSearchView.h"
 #include "RawPdb.h"
 
+namespace 
+{
+    CString ValidateName(LPCTSTR szName)
+    {
+        CString tmp(szName);
+        tmp.Replace(TEXT("&amp;"), TEXT("&"));
+        tmp.Replace(TEXT("&lt;"), TEXT("<"));
+        tmp.Replace(TEXT("&gt;"), TEXT(">"));
+        return tmp;
+    }
+}
+
 
 class CBrowserView : public CSplitterWindowImpl<CBrowserView>
 {
@@ -277,7 +289,7 @@ public:
 					//DWORD id = _wtoi(p + 6);
 					PDBSYMBOL Symbol;
 					Symbol.dwSymId = 0;
-					Symbol.sKey = p+6;
+					Symbol.sKey=ValidateName(p+6);
 					CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 					m_currentIndex = Symbol.sKey;
 					::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
@@ -305,6 +317,13 @@ public:
 
 	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
 	{
+		PDBSYMBOL Symbol;
+		if(0 < m_ctrlSearch.GetWindowText(Symbol.sKey))
+		{
+			CDiaInfo info;
+			auto sRTF = info.GetSymbolInfo(m_path, Symbol);
+			m_ctrlView.Load(sRTF);
+		}
 		return 0;
 	}
 
