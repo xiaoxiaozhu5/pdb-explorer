@@ -13,6 +13,7 @@ enum
 #include "DlgTabCtrl.h"
 #include "CSearchView.h"
 #include "RawPdb.h"
+#include "CMyTreeCtrl.h"
 
 namespace 
 {
@@ -37,12 +38,13 @@ public:
 	enum
 	{
 		TIMER_START_INTERVAL = 200,
-		TIMER_SLEEP_INTERVAL = 100,
-		TIMER_WORK_INTERVAL = 150,
+		TIMER_SLEEP_INTERVAL = 50,
+		TIMER_WORK_INTERVAL = 200,
 	};
 
 	CString m_path;
-	CTreeViewCtrl m_ctrlTree;
+	//CTreeViewCtrl m_ctrlTree;
+	CMyTreeCtrl m_ctrlTree;
 	CSimpleHtmlCtrl m_ctrlView;
 	CDlgContainerCtrl m_ctrlContainer;
 	CSearchView m_ctrlSearch;
@@ -121,13 +123,18 @@ public:
 		if (!m_ctrlTree.IsWindow()) return;
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
 		SIZE_T lCurCount = m_collector.m_aSymbols.GetCount();
+		m_ctrlTree.SetRedraw(FALSE);
 		if (m_lLastSize != lCurCount) _PopulateTree();
+		m_ctrlTree.SetRedraw(TRUE);
 		if (m_collector.m_bDone && m_lLastSize == lCurCount)
 		{
 			KillTimer(TIMERID_POPULATE);
 			PostMessage(WM_USER_LOAD_END);
 		}
-		else SetTimer(TIMERID_POPULATE, TIMER_SLEEP_INTERVAL);
+		else
+		{
+			SetTimer(TIMERID_POPULATE, TIMER_SLEEP_INTERVAL);
+		}
 	}
 
 	BEGIN_MSG_MAP(CBrowserView)
@@ -143,7 +150,7 @@ public:
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnFind)
 	    COMMAND_ID_HANDLER(IDOK, OnOk)
         COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
-	    //CHAIN_COMMANDS_MEMBER(m_ctrlView)
+	    CHAIN_COMMANDS_MEMBER(m_ctrlView)
 		//FORWARD_NOTIFICATIONS()
 	    REFLECT_NOTIFICATIONS()
 	END_MSG_MAP()
@@ -357,11 +364,14 @@ public:
 				break;
 			}
 
-			CString s, st;
-			s.LoadString(IDS_PROCESSING_SYMBOL);
-			st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), Symbol.sKey);
-			::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
-			if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL) break;
+			if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL)
+			{
+				CString s, st;
+				s.LoadString(IDS_PROCESSING_SYMBOL);
+				st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), Symbol.sKey);
+				::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
+				break;
+			}
 		}
 		if (m_lLastSize == 0) _ExpandTreeNodes(m_ctrlTree.GetRootItem(), 0);
 		m_lLastSize = iIndex;
