@@ -86,13 +86,13 @@ public:
 		m_ctrlTree.SetItemData(m_root_treeitem, -1);
 
 		sKey.LoadString(IDS_TYPE_UDT);
-		m_udt_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_udt_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_root_treeitem, TVI_SORT);
 		m_ctrlTree.SetItemData(m_udt_treeitem, -1);
 		sKey.LoadString(IDS_TYPE_ENUM);
-		m_enum_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_enum_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_root_treeitem, TVI_SORT);
 		m_ctrlTree.SetItemData(m_enum_treeitem, -1);
 		sKey.LoadString(IDS_TYPE_TYPEDEF);
-		m_typedef_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
+		m_typedef_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_root_treeitem, TVI_SORT);
 		m_ctrlTree.SetItemData(m_typedef_treeitem, -1);
 
 		m_collector.Stop();
@@ -128,6 +128,7 @@ public:
 		m_ctrlTree.SetRedraw(TRUE);
 		if (m_collector.m_bDone && m_lLastSize == lCurCount)
 		{
+			_ExpandTreeNodes(m_root_treeitem, 0);
 			KillTimer(TIMERID_POPULATE);
 			PostMessage(WM_USER_LOAD_END);
 		}
@@ -144,6 +145,9 @@ public:
 		MESSAGE_HANDLER(WM_USER_LOAD_START, OnAnimStart)
 		MESSAGE_HANDLER(WM_USER_LOAD_END, OnAnimEnd)
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged)
+#if 1
+		NOTIFY_CODE_HANDLER(TVN_GETDISPINFO, OnTvnGetdispinfoTree)
+#endif
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
 		ALT_MSG_MAP(1)
@@ -157,7 +161,7 @@ public:
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 	{
-		DWORD dwStyle = WS_CHILD | WS_VISIBLE | TVS_HASBUTTONS | TVS_HASLINES | TVS_SHOWSELALWAYS;
+		DWORD dwStyle = WS_CHILD | WS_VISIBLE | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS;
 		m_ctrlTree.Create(m_hWnd, rcDefault, _T(""), dwStyle, 0, IDC_TREE);
 		m_ctrlView.Create(m_hWnd, rcDefault, _T(""),
 					WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | 
@@ -281,6 +285,30 @@ public:
 		return 0;
 	}
 
+#if 1
+	LRESULT OnTvnGetdispinfoTree(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled)
+	{
+		LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pnmh);
+
+		// Get the tree control item
+		TVITEM* pItem = &(pTVDispInfo)->item;
+
+		// Just interested in text notifications
+		if ((pItem->mask & TVIF_TEXT) != TVIF_TEXT)
+		{
+			bHandled = FALSE;
+			return 0;
+		}
+
+		SIZE_T index = pItem->lParam;
+		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
+		const PDBSYMBOL& Symbol = m_collector.m_aSymbols[index];
+		pItem->pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+		bHandled = TRUE;
+		return 0;
+	}
+#endif
+
 	LRESULT OnLink(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
 	{
 		TCHAR szUrl[MAX_PATH] = {0};
@@ -373,7 +401,6 @@ public:
 				break;
 			}
 		}
-		if (m_lLastSize == 0) _ExpandTreeNodes(m_ctrlTree.GetRootItem(), 0);
 		m_lLastSize = iIndex;
 	}
 
@@ -390,7 +417,20 @@ public:
 	void _InsertTreeNode(const CString& sToken, HTREEITEM hItem, SIZE_T iIndex, int iDataLevel)
 	{
 		if (sToken.IsEmpty()) return;
+#if 0
 		auto hChild = m_ctrlTree.InsertItem(sToken, -1, -1, hItem, TVI_LAST);
+#else
+		TVINSERTSTRUCT tvis{};
+		tvis.hParent = hItem;
+		TVITEM tvItem{};
+		tvItem.mask = LVIF_TEXT | LVIF_PARAM;
+		tvItem.pszText = LPSTR_TEXTCALLBACK;
+		tvItem.cchTextMax = MAX_PATH+1;
+		tvItem.lParam = iIndex;
+		tvis.item = tvItem;
+		tvis.hInsertAfter = TVI_LAST;
+		auto hChild = m_ctrlTree.InsertItem(&tvis);
+#endif
 		m_ctrlTree.SetItemData(hChild, iIndex);
 	}
 

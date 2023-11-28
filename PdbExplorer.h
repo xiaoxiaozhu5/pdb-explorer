@@ -10,7 +10,8 @@ public:
 
 	int Run(LPTSTR lpstrCmdLine, int nCmdShow)
 	{
-		if(m_wndFrame.CreateEx() == NULL)
+		RECT rc = {0, 0, 1366, 768};
+		if(m_wndFrame.CreateEx(NULL, rc) == NULL)
 		{
 			ATLTRACE(_T("CMainFrame creation failed!\n"));
 			return 0;
@@ -44,6 +45,7 @@ public:
 			m_wndFrame.m_mru.AddToList(szPathName);
 		}
 
+		m_wndFrame.CenterWindow();
 		m_wndFrame.ShowWindow(nCmdShow);
 
 		return CMessageLoop::Run();
