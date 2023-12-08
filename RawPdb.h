@@ -341,7 +341,7 @@ namespace PDB
 				CoalescedMSFStream directoryIndicesStream(data_, super_block_->blockSize, super_block_->directoryBlockIndices, directoryBlockCount * sizeof(uint32_t));
 				// these are the indices of blocks making up the directory stream, now guaranteed to be contiguous
 				const uint32_t* directoryIndices = directoryIndicesStream.GetDataAtOffset<uint32_t>(0u);
-				directory_stream_ = CoalescedMSFStream(data_, super_block_->blockSize, directoryIndices, super_block_->directorySize);
+				auto directory_stream = CoalescedMSFStream(data_, super_block_->blockSize, directoryIndices, super_block_->directorySize);
 				// https://llvm.org/docs/PDB/MsfFile.html#the-stream-directory
 				// parse the directory from its contiguous version. the directory matches the following struct:
 				//	struct StreamDirectory
@@ -350,11 +350,11 @@ namespace PDB
 				//		uint32_t streamSizes[streamCount];
 				//		uint32_t streamBlocks[streamCount][];
 				//	};
-				stream_count_ = *directory_stream_.GetDataAtOffset<uint32_t>(0u);
+				stream_count_ = *directory_stream.GetDataAtOffset<uint32_t>(0u);
 
 				// we can assign pointers into the stream directly, since the RawFile keeps ownership of the directory stream
-				stream_sizes_ = directory_stream_.GetDataAtOffset<uint32_t>(sizeof(uint32_t));
-				const uint32_t* directoryStreamBlocks = directory_stream_.GetDataAtOffset<uint32_t>(sizeof(uint32_t) + sizeof(uint32_t) * stream_count_);
+				stream_sizes_ = directory_stream.GetDataAtOffset<uint32_t>(sizeof(uint32_t));
+				const uint32_t* directoryStreamBlocks = directory_stream.GetDataAtOffset<uint32_t>(sizeof(uint32_t) + sizeof(uint32_t) * stream_count_);
 
 				// prepare indices for directly accessing individual streams
 				stream_blocks_ = new const uint32_t*[stream_count_];
@@ -433,7 +433,6 @@ namespace PDB
 		const Byte* data_;
 		const SuperBlock* super_block_;
 		CoalescedMSFStream info_stream_;
-		CoalescedMSFStream directory_stream_;
 
 		// stream directory
 		uint32_t stream_count_;
