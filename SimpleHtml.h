@@ -769,6 +769,12 @@ public:
       ATLTRY( StreamIn(SF_RTF, es) );
       // All done...
       free( pstrText );
+      if(es.dwError != 0)
+      {
+        CString msg;
+        msg.Format(_T("Load html error:%#x"), es.dwError);
+        MessageBox(msg);
+      }
 
       _CreateLinks(convert);
       return TRUE;
