@@ -16,69 +16,60 @@ public:
 	CString GetSymbolInfo(LPCTSTR path, const PDBSYMBOL& Symbol)
 	{
 		CString sRTF;
-		_ATLTRY
+		HRESULT hr = CoInitialize(NULL);
+		hr = CoCreateInstance(__uuidof(DiaSource),
+			NULL,
+			CLSCTX_INPROC_SERVER,
+			__uuidof(IDiaDataSource),
+			(void**)&m_spDataSource);
+		if (FAILED(hr))
 		{
-			HRESULT hr = CoInitialize(NULL);
-			hr = CoCreateInstance(__uuidof(DiaSource),
-								  NULL,
-								  CLSCTX_INPROC_SERVER,
-								  __uuidof(IDiaDataSource),
-								  (void**)&m_spDataSource);
+			return sRTF;
+		}
+
+		wchar_t wszExt[MAX_PATH];
+		_wsplitpath_s(path, NULL, 0, NULL, 0, NULL, 0, wszExt, MAX_PATH);
+		if (!_wcsicmp(wszExt, L".pdb"))
+		{
+			hr = m_spDataSource->loadDataFromPdb(path);
 			if (FAILED(hr))
 			{
-				return CString();
+				return sRTF;
 			}
+		}
 
-			wchar_t wszExt[MAX_PATH];
-			_wsplitpath_s(path, NULL, 0, NULL, 0, NULL, 0, wszExt, MAX_PATH);
-			if (!_wcsicmp(wszExt, L".pdb"))
-			{
-				hr = m_spDataSource->loadDataFromPdb(path);
-				if (FAILED(hr))
-				{
-					return CString();
-				}
-			}
+		hr = m_spDataSource->openSession(&m_session);
+		if (FAILED(hr))
+		{
+			return sRTF;
+		}
+		CComPtr<IDiaSymbol> symbol = NULL;
+		m_session->get_globalScope(&m_global);
 
-			hr = m_spDataSource->openSession(&m_session);
-			if (FAILED(hr))
+		CComPtr<IDiaEnumSymbols> enum_symbols = NULL;
+		ULONG celt = 1;
+		bool bFind = false;
+		enum SymTagEnum ste[] = { SymTagUDT, SymTagEnum, SymTagTypedef };
+		for (int i = 0; i < _countof(ste); ++i)
+		{
+			m_global->findChildren(ste[i], NULL, nsNone, &enum_symbols);
+			while (SUCCEEDED(enum_symbols->Next(1, &symbol, &celt)) && (celt == 1))
 			{
-				return CString();
-			}
-			IDiaSymbol *symbol = NULL;
-			m_session->get_globalScope(&m_global);
-
-			IDiaEnumSymbols *enum_symbols = NULL;
-			ULONG celt = 1;
-			bool bFind = false;
-			enum SymTagEnum ste[] = {SymTagUDT, SymTagEnum, SymTagTypedef};
-			for(int i = 0; i < _countof(ste); ++i)
-			{
-				m_global->findChildren(ste[i], NULL, nsNone, &enum_symbols);
-				while (SUCCEEDED(enum_symbols->Next(1, &symbol, &celt)) && (celt == 1))
+				CComBSTR bstrName;
+				symbol->get_name(&bstrName);
+				if (CString(bstrName.m_str) == Symbol.sKey)
 				{
-					CComBSTR bstrName;
-					symbol->get_name(&bstrName);
-					if (CString(bstrName.m_str) == Symbol.sKey)
-					{
-						bFind = true;
-						break;
-					}
-					symbol->Release();
-				}
-				enum_symbols->Release();
-				if (bFind)
-				{
-					CSym* sym = CSym::NewSym(symbol);
-					sym->Format(&sRTF);
-					CSym::Delete(sym);
-					symbol->Release();
+					bFind = true;
 					break;
 				}
 			}
-		}
-		_ATLCATCHALL()
-		{
+			if (bFind)
+			{
+				CSym* sym = CSym::NewSym(symbol);
+				sym->Format(&sRTF);
+				CSym::Delete(sym);
+				break;
+			}
 		}
 		return sRTF;
 	}
@@ -86,18 +77,12 @@ public:
 	CString GetSymbolInfo(IDiaSymbol* sym_global, const PDBSYMBOL& Symbol)
 	{
 		CString sRTF;
-		_ATLTRY
+		auto find_symbol = CSym::Enum(sym_global, SymTagNull, _FindSymbol, (PVOID)Symbol.dwSymId);
+		if (find_symbol)
 		{
-			auto find_symbol = CSym::Enum(sym_global, SymTagNull, _FindSymbol, (PVOID)Symbol.dwSymId);
-			if (find_symbol)
-			{
-				CSym* sym = CSym::NewSym(find_symbol);
-				sym->Format(&sRTF);
-				CSym::Delete(sym);
-			}
-		}
-		_ATLCATCHALL()
-		{
+			CSym* sym = CSym::NewSym(find_symbol);
+			sym->Format(&sRTF);
+			CSym::Delete(sym);
 		}
 		return sRTF;
 	}
