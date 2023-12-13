@@ -318,14 +318,16 @@ public:
 		{
 			if (m_ctrlView.ExtractLink(pEnLink->chrg, szUrl, MAX_PATH))
 			{
-				PCWSTR p = _tcsstr(szUrl, TEXT("sym://"));
+				PTSTR p = _tcsstr(szUrl, TEXT("sym://"));
 				if (NULL != p)
 				{
+					PTSTR url = p+6;
+					PTSTR slash = _tcschr(url, '/');
+					slash[0] = '\0';
 					CDiaInfo info;
-					//DWORD id = _wtoi(p + 6);
 					PDBSYMBOL Symbol;
-					Symbol.dwSymId = 0;
-					Symbol.sKey=ValidateName(p+6);
+					Symbol.dwSymTag = _ttoi(slash + 1);
+					Symbol.sKey=ValidateName(url);
 					CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 					m_currentIndex = Symbol.sKey;
 					::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);

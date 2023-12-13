@@ -49,10 +49,9 @@ public:
 		CComPtr<IDiaEnumSymbols> enum_symbols = NULL;
 		ULONG celt = 1;
 		bool bFind = false;
-		enum SymTagEnum ste[] = { SymTagUDT, SymTagEnum, SymTagTypedef };
-		for (int i = 0; i < _countof(ste); ++i)
+		if(Symbol.dwSymTag != 0)
 		{
-			m_global->findChildren(ste[i], NULL, nsNone, &enum_symbols);
+			m_global->findChildren((enum SymTagEnum)Symbol.dwSymTag, NULL, nsNone, &enum_symbols);
 			while (SUCCEEDED(enum_symbols->Next(1, &symbol, &celt)) && (celt == 1))
 			{
 				CComBSTR bstrName;
@@ -68,7 +67,31 @@ public:
 				CSym* sym = CSym::NewSym(symbol);
 				sym->Format(&sRTF);
 				CSym::Delete(sym);
-				break;
+			}
+		}
+		else
+		{
+			enum SymTagEnum ste[] = { SymTagUDT, SymTagEnum, SymTagTypedef };
+			for (int i = 0; i < _countof(ste); ++i)
+			{
+				m_global->findChildren(ste[i], NULL, nsNone, &enum_symbols);
+				while (SUCCEEDED(enum_symbols->Next(1, &symbol, &celt)) && (celt == 1))
+				{
+					CComBSTR bstrName;
+					symbol->get_name(&bstrName);
+					if (CString(bstrName.m_str) == Symbol.sKey)
+					{
+						bFind = true;
+						break;
+					}
+				}
+				if (bFind)
+				{
+					CSym* sym = CSym::NewSym(symbol);
+					sym->Format(&sRTF);
+					CSym::Delete(sym);
+					break;
+				}
 			}
 		}
 		return sRTF;

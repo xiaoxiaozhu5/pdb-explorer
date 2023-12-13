@@ -414,11 +414,13 @@ BOOL CSymUDT::GetType(__out CString* str)
 
     DWORD id;
     CComBSTR bsName;
+    DWORD symtag;
     m_sym->get_symIndexId(&id);
     m_sym->get_name(&bsName);
+    m_sym->get_symTag(&symtag);
     CString validate_name = ValidateName(bsName.m_str);
-    str->Format(L"<font color=blue>%s</font> <a href=\"sym://%s\">%s</a>",
-        kind, validate_name, validate_name);
+    str->Format(L"<font color=blue>%s</font> <a href=\"sym://%s/%d\">%s</a>",
+        kind, validate_name, symtag, validate_name);
     return TRUE;
 }
 
@@ -451,9 +453,11 @@ BOOL CSymEnum::GetType(__out CString* str)
 
     DWORD id;
     m_sym->get_symIndexId(&id);
+    DWORD symtag;
+    m_sym->get_symTag(&symtag);
     CString validate_name = ValidateName(bsName.m_str);
-    str->Format(L"<font color=blue>enum</font> <a href=\"sym://%s\">%s</a>",
-        validate_name, validate_name);
+    str->Format(L"<font color=blue>enum</font> <a href=\"sym://%s/%d\">%s</a>",
+        validate_name, symtag, validate_name);
     return TRUE;
 }
 
