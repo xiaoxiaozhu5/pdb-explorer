@@ -13,7 +13,7 @@ enum
 #include "DlgTabCtrl.h"
 #include "CSearchView.h"
 #include "RawPdb.h"
-#include "CMyTreeCtrl.h"
+#include "VirtualListView.h"
 
 namespace 
 {
@@ -44,7 +44,7 @@ public:
 
 	CString m_path;
 	//CTreeViewCtrl m_ctrlTree;
-	CMyTreeCtrl m_ctrlTree;
+	CComObject<CGroupedVirtualModeView>* m_ctrlList;
 	CSimpleHtmlCtrl m_ctrlView;
 	CDlgContainerCtrl m_ctrlContainer;
 	CSearchView m_ctrlSearch;
@@ -54,11 +54,6 @@ public:
 	SIZE_T m_lLastSize;
 	//CRgn m_rgnWaitAnim;
 	CString m_currentIndex;
-
-	HTREEITEM m_root_treeitem;
-	HTREEITEM m_udt_treeitem;
-	HTREEITEM m_enum_treeitem;
-	HTREEITEM m_typedef_treeitem;
 
 	BOOL PreTranslateMessage(MSG* pMsg)
 	{
@@ -75,25 +70,8 @@ public:
 		m_collector.Abort();
 
 		if (!m_ctrlView.IsWindow()) return;
-		m_ctrlTree.SetRedraw(FALSE);
-		m_ctrlTree.DeleteAllItems();
-		m_ctrlTree.SetRedraw(TRUE);
+		m_ctrlList->DeleteAllItems();
 		m_ctrlView.SetWindowText(_T(""));
-
-		CString sKey;
-		sKey.Format(TEXT("%s"), pstrFilename);
-		m_root_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_ctrlTree.GetRootItem(), TVI_SORT);
-		m_ctrlTree.SetItemData(m_root_treeitem, -1);
-
-		sKey.LoadString(IDS_TYPE_UDT);
-		m_udt_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_root_treeitem, TVI_SORT);
-		m_ctrlTree.SetItemData(m_udt_treeitem, -1);
-		sKey.LoadString(IDS_TYPE_ENUM);
-		m_enum_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_root_treeitem, TVI_SORT);
-		m_ctrlTree.SetItemData(m_enum_treeitem, -1);
-		sKey.LoadString(IDS_TYPE_TYPEDEF);
-		m_typedef_treeitem = m_ctrlTree.InsertItem(sKey, -1, -1, m_root_treeitem, TVI_SORT);
-		m_ctrlTree.SetItemData(m_typedef_treeitem, -1);
 
 		m_collector.Stop();
 		m_collector.Init(m_hWnd, pstrFilename);
@@ -120,15 +98,10 @@ public:
 
 	void ProcessTreeUpdates()
 	{
-		if (!m_ctrlTree.IsWindow()) return;
-		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
-		SIZE_T lCurCount = m_collector.m_aSymbols.GetCount();
-		m_ctrlTree.SetRedraw(FALSE);
-		if (m_lLastSize != lCurCount) _PopulateTree();
-		m_ctrlTree.SetRedraw(TRUE);
-		if (m_collector.m_bDone && m_lLastSize == lCurCount)
+		if (m_collector.m_bDone)
 		{
-			_ExpandTreeNodes(m_root_treeitem, 0);
+			CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
+			_PopulateTree();
 			KillTimer(TIMERID_POPULATE);
 			PostMessage(WM_USER_LOAD_END);
 		}
@@ -161,8 +134,11 @@ public:
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 	{
-		DWORD dwStyle = WS_CHILD | WS_VISIBLE | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS;
-		m_ctrlTree.Create(m_hWnd, rcDefault, _T(""), dwStyle, 0, IDC_TREE);
+		CComObject<CGroupedVirtualModeView>::CreateInstance(&m_ctrlList);
+		m_ctrlList->Create(m_hWnd, rcDefault, NULL, WS_VSCROLL  |
+				WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | LVS_REPORT |
+				LVS_SHOWSELALWAYS | LVS_AUTOARRANGE | LVS_ALIGNTOP | LVS_OWNERDATA, 
+				0);
 		m_ctrlView.Create(m_hWnd, rcDefault, _T(""),
 					WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | 
 					      ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_NOHIDESEL |
@@ -172,7 +148,7 @@ public:
 		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT, rcDefault, m_hWnd, 0);
 		//m_ctrlSearch.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT);
 		m_ctrlContainer.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-		m_ctrlContainer.AddItem(m_ctrlTree);
+		m_ctrlContainer.AddItem(m_ctrlList->m_hWnd);
 		m_ctrlContainer.AddItem(m_ctrlSearch);
 		m_ctrlContainer.SetCurSel(0);
 
@@ -286,13 +262,12 @@ public:
 		return 0;
 	}
 
-#if 1
 	LRESULT OnTvnGetdispinfoTree(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled)
 	{
-		LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pnmh);
+		NMLVDISPINFO *pTVDispInfo = reinterpret_cast<NMLVDISPINFO*>(pnmh);
 
 		// Get the tree control item
-		TVITEM* pItem = &(pTVDispInfo)->item;
+		LVITEM* pItem = &(pTVDispInfo)->item;
 
 		// Just interested in text notifications
 		if ((pItem->mask & TVIF_TEXT) != TVIF_TEXT)
@@ -301,14 +276,12 @@ public:
 			return 0;
 		}
 
-		SIZE_T index = pItem->lParam;
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
-		const PDBSYMBOL& Symbol = m_collector.m_aSymbols[index];
+		const PDBSYMBOL& Symbol = m_collector.m_aSymbols[pItem->iItem];
 		pItem->pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
 		bHandled = TRUE;
 		return 0;
 	}
-#endif
 
 	LRESULT OnLink(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
 	{
@@ -346,7 +319,7 @@ public:
 		{
 			bHandled = FALSE;
 		}
-		else if(hWndCtl == m_ctrlTree)
+		else if(hWndCtl == m_ctrlList->m_hWnd)
 		{
 			m_ctrlContainer.SetCurSel(1);
 		}
@@ -375,84 +348,37 @@ public:
 
 	void _PopulateTree()
 	{
-		DWORD dwStartTick = ::GetTickCount();
+		//DWORD dwStartTick = ::GetTickCount();
 		SIZE_T iIndex;
-		for (iIndex = m_lLastSize; iIndex < m_collector.m_aSymbols.GetCount(); iIndex++)
+		int cnt_udf = 0, cnt_enum = 0, cnt_typedef = 0;
+		for (iIndex = 0; iIndex < m_collector.m_aSymbols.GetCount(); iIndex++)
 		{
 			const PDBSYMBOL& Symbol = m_collector.m_aSymbols[iIndex];
 			switch (Symbol.dwSymTag)
 			{
 			case SymTagUDT:
-				_InsertTreeNode(Symbol.sKey, m_udt_treeitem, iIndex, 0);
+				cnt_udf++;
 				break;
 			case SymTagEnum:
-				_InsertTreeNode(Symbol.sKey, m_enum_treeitem, iIndex, 0);
+				cnt_enum++;
 				break;
 			case SymTagTypedef:
-				_InsertTreeNode(Symbol.sKey, m_typedef_treeitem, iIndex, 0);
+				cnt_typedef++;
 				break;
 			default:
 				break;
 			}
 
-			if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL)
-			{
-				CString s, st;
-				s.LoadString(IDS_PROCESSING_SYMBOL);
-				st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), Symbol.sKey);
-				::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
-				break;
-			}
+			//if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL)
+			//{
+			//	CString s, st;
+			//	s.LoadString(IDS_PROCESSING_SYMBOL);
+			//	st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), Symbol.sKey);
+			//	::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
+			//	break;
+			//}
 		}
-		m_lLastSize = iIndex;
-	}
-
-	void _ExpandTreeNodes(HTREEITEM hItem, int iLevel)
-	{
-		while (hItem != NULL)
-		{
-			m_ctrlTree.Expand(hItem);
-			if (iLevel < 1) _ExpandTreeNodes(m_ctrlTree.GetChildItem(hItem), iLevel + 1);
-			hItem = m_ctrlTree.GetNextItem(hItem, TVGN_NEXT);
-		}
-	}
-
-	void _InsertTreeNode(const CString& sToken, HTREEITEM hItem, SIZE_T iIndex, int iDataLevel)
-	{
-		if (sToken.IsEmpty()) return;
-#if 0
-		auto hChild = m_ctrlTree.InsertItem(sToken, -1, -1, hItem, TVI_LAST);
-#else
-		TVINSERTSTRUCT tvis{};
-		tvis.hParent = hItem;
-		TVITEM tvItem{};
-		tvItem.mask = LVIF_TEXT | LVIF_PARAM;
-		tvItem.pszText = LPSTR_TEXTCALLBACK;
-		tvItem.cchTextMax = MAX_PATH+1;
-		tvItem.lParam = iIndex;
-		tvis.item = tvItem;
-		tvis.hInsertAfter = TVI_LAST;
-		auto hChild = m_ctrlTree.InsertItem(&tvis);
-#endif
-		m_ctrlTree.SetItemData(hChild, iIndex);
-	}
-
-	HTREEITEM _FindTreeChildItem(HTREEITEM hItem, LPCTSTR pstrName) const
-	{
-		hItem = m_ctrlTree.GetChildItem(hItem);
-		TCHAR szName[300] = {0};
-		TVITEMEX tvi = {0};
-		tvi.mask = TVIF_TEXT;
-		tvi.pszText = szName;
-		tvi.cchTextMax = _countof(szName);
-		while (hItem != NULL)
-		{
-			tvi.hItem = hItem;
-			if (!m_ctrlTree.GetItem(&tvi)) return NULL;
-			int iRes = _tcscmp(pstrName, szName);
-			if (iRes == 0) return hItem;
-			hItem = m_ctrlTree.GetNextItem(hItem, TVGN_NEXT);
-		}
-		return NULL;
+		m_ctrlList->SetItemCount(m_collector.m_aSymbols.GetCount());
+		m_ctrlList->InsertGroups(cnt_udf, cnt_enum, cnt_typedef);
 	}
 };
