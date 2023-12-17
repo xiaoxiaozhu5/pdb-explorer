@@ -117,10 +117,8 @@ public:
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
 		MESSAGE_HANDLER(WM_USER_LOAD_START, OnAnimStart)
 		MESSAGE_HANDLER(WM_USER_LOAD_END, OnAnimEnd)
-		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnSelChanged)
-#if 1
-		NOTIFY_CODE_HANDLER(TVN_GETDISPINFO, OnTvnGetdispinfoTree)
-#endif
+		NOTIFY_CODE_HANDLER(NM_DBLCLK, OnSelChanged)
+		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
 		CHAIN_MSG_MAP(CSplitterWindowImpl<CBrowserView>)
 		ALT_MSG_MAP(1)
@@ -170,6 +168,7 @@ public:
 
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 	{
+		m_ctrlList->EnableGroupView(FALSE);
 		m_collector.Stop();
 		bHandled = FALSE;
 		return 0;
@@ -208,6 +207,19 @@ public:
 
 	LRESULT OnSelChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
 	{
+		NM_LISTVIEW* pDetails = reinterpret_cast<NM_LISTVIEW*>(pnmh);
+		CDiaInfo info;
+		CString sRTF;
+		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
+		if(pDetails->iItem < 0 || pDetails->iItem > m_collector.m_aSymbols.GetCount())
+			return 0;
+		PDBSYMBOL Symbol = m_collector.m_aSymbols[pDetails->iItem];
+		sRTF = info.GetSymbolInfo(m_path, Symbol);
+		m_currentIndex = Symbol.sKey;
+		::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
+
+
+#if 0
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
 		CDiaInfo info;
 		HTREEITEM hTreeSel = m_ctrlTree.GetSelectedItem();
@@ -215,12 +227,12 @@ public:
 		CString sRTF;
 		if (dwIndex == (DWORD)-1)
 		{
-			if(m_ctrlTree.GetRootItem() == hTreeSel)
+			if (m_ctrlTree.GetRootItem() == hTreeSel)
 			{
 				CString pdb_path;
 				m_ctrlTree.GetItemText(hTreeSel, pdb_path);
 				PDB::RawPdb raw_pdb;
-				if(raw_pdb.Open(pdb_path))
+				if (raw_pdb.Open(pdb_path))
 				{
 					CString pdb_info;
 					auto pdb_hdr = raw_pdb.GetHeader();
@@ -232,7 +244,7 @@ public:
 					size_t feature_num = 0;
 					auto feature = raw_pdb.GetFeature(&feature_num);
 					CString sFeature(_T(" Feature ["));
-					for(size_t i = 0u; i < feature_num; ++i)
+					for (size_t i = 0u; i < feature_num; ++i)
 					{
 						if (feature[i] == 0)
 							continue;
@@ -258,6 +270,7 @@ public:
 			m_currentIndex = Symbol.sKey;
 			::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
 		}
+#endif
 		m_ctrlView.Load(sRTF);
 		return 0;
 	}
@@ -378,7 +391,8 @@ public:
 			//	break;
 			//}
 		}
-		m_ctrlList->SetItemCount(m_collector.m_aSymbols.GetCount());
+		m_lLastSize = m_collector.m_aSymbols.GetCount();
 		m_ctrlList->InsertGroups(cnt_udf, cnt_enum, cnt_typedef);
+		m_ctrlList->SetItemCount(m_collector.m_aSymbols.GetCount());
 	}
 };

@@ -159,9 +159,9 @@ public:
 
 	LRESULT OnSave(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 	{
-		auto sel = m_view.m_ctrlTree.GetSelectedItem();
+		//auto sel = m_view.m_ctrlTree.GetSelectedItem();
 		CString sel_string;
-		m_view.m_ctrlTree.GetItemText(sel, sel_string);
+		//m_view.m_ctrlTree.GetItemText(sel, sel_string);
 		if (sel_string.IsEmpty()) return 0;
 
 		TCHAR tmp[4096] = {0};

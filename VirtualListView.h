@@ -24,11 +24,9 @@ class CGroupedVirtualModeView :
 	public CComObjectRootEx<CComMultiThreadModel>,
 	public CComCoClass<CGroupedVirtualModeView, &CLSID_CGroupedVirtualModeView>,
 	public CWindowImpl<CGroupedVirtualModeView, CListViewCtrl>,
-	//public CCustomDraw<CGroupedVirtualModeView>, // для перехвата WM_NOTIFY, NM_CUSTOMDRAW
+	//public CCustomDraw<CGroupedVirtualModeView>, // для перехват?WM_NOTIFY, NM_CUSTOMDRAW
 	public IOwnerDataCallback
 {
-#define ITEMCOUNT 999999
-#define ITEMSPERGROUP 333333
 
 public:
 	DECLARE_WND_SUPERCLASS(NULL, CListViewCtrl::GetWndClassName())
@@ -44,7 +42,6 @@ public:
 	END_COM_MAP()
 
 	BEGIN_MSG_MAP(CGroupedVirtualModeView)
-		REFLECTED_NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnGetDispInfo)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		MESSAGE_HANDLER(WM_NCCALCSIZE, OnNonClientCalcSize)
@@ -74,7 +71,7 @@ public:
 
 	DWORD OnPrePaint(int idCtrl, LPNMCUSTOMDRAW nmdc)
 	{
-		// Запрашиваем уведомления NM_CUSTOMDRAW для каждого элемента списка.
+		// Запрашивае?уведомления NM_CUSTOMDRAW для каждог?элемента списка.
 		return CDRF_NOTIFYITEMDRAW;
 	}
 
@@ -111,39 +108,6 @@ public:
 
 	DWORD OnSubItemPrePaint (int /*idCtrl*/, LPNMCUSTOMDRAW nmcd)
 	{
-		NMLVCUSTOMDRAW* lvcd = reinterpret_cast<NMLVCUSTOMDRAW*>(nmcd);
-		long row=nmcd->dwItemSpec;
-		
-		LPCWSTR ss1 = _T("Maxim Sokhatsky");
-		LPCWSTR ss2 = _T("maxim@synrc.com");
-		LPCWSTR ss3 = _T("+380 67 663 18 70");
-
-		CRect rect;
-		GetItemRect(row, &rect, LVIR_BOUNDS);
-
-		CRect iconRect;
-		GetItemRect(row, &iconRect, LVIR_ICON);
-	
-		//int mark = ListView_GetSelectionMark(m_hWnd);
-		//if(mark != 0){
-		//	ListView_RedrawItems(m_hWnd, row, row);	
-		//}
-		iconRect.InflateRect(-10,-10,-10,-10);
-		//InvalidateRect(rect);		
-    		//FillRect(nmcd->hdc, &iconRect,(HBRUSH)(COLOR_WINDOW));
-    	//Invalidate();
-		rect.OffsetRect(70,4);
-		DrawText(nmcd->hdc, ss1, wcslen(ss1), rect, 
-			DT_END_ELLIPSIS | DT_TOP);
-
-		rect.OffsetRect(0,17);
-		DrawText(nmcd->hdc, ss2, wcslen(ss2), rect, 
-			DT_END_ELLIPSIS | DT_TOP | DT_SINGLELINE);
-
-		rect.OffsetRect(0,17);
-		DrawText(nmcd->hdc, ss3, wcslen(ss3), rect, 
-			DT_END_ELLIPSIS | DT_TOP | DT_SINGLELINE);
-
 		return CDRF_SKIPDEFAULT;
 	}
 
@@ -160,19 +124,35 @@ public:
 
 	virtual STDMETHODIMP GetItemInGroup(int groupIndex, int groupWideItemIndex, PINT pTotalItemIndex)
 	{
-		// we want group 0 to contain items 0, 3, 6...
-		//         group 1            items 1, 4, 7...
-		//         group 2            items 2, 5, 8...
-		*pTotalItemIndex = groupIndex + groupWideItemIndex * 3;
+		if(groupIndex == 0)
+		{
+			*pTotalItemIndex = groupIndex + groupWideItemIndex;
+		}
+		else if(groupIndex == 1)
+		{
+			*pTotalItemIndex = udf_cnt_ + groupWideItemIndex;
+		}
+		else if(groupIndex == 2)
+		{
+			*pTotalItemIndex = udf_cnt_ + enum_cnt_ + groupWideItemIndex;
+		}
 		return S_OK;
 	}
 
 	virtual STDMETHODIMP GetItemGroup(int itemIndex, int occurenceIndex, PINT pGroupIndex)
 	{
-		// group 0 contains items 0, 3, 6...
-		// group 1 contains items 1, 4, 7...
-		// group 2 contains items 2, 5, 8...
-		*pGroupIndex = itemIndex % 3;
+		if(itemIndex < udf_cnt_)
+		{
+			*pGroupIndex = 0;
+		}
+		else if(itemIndex < enum_cnt_)
+		{
+			*pGroupIndex = 1;
+		}
+		else if(itemIndex < typedef_cnt_)
+		{
+			*pGroupIndex = 2;
+		}
 		return S_OK;
 	}
 
@@ -229,19 +209,6 @@ public:
 		return lr;
 	}
 
-	LRESULT OnGetDispInfo(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
-	{
-		NMLVDISPINFO* pDetails = reinterpret_cast<NMLVDISPINFO*>(pnmh);
-		if(pDetails->item.mask & LVIF_TEXT) {
-			StringCchPrintf(pDetails->item.pszText, 
-				pDetails->item.cchTextMax, _T("Item %i"), pDetails->item.iItem + 1);
-		}
-		//if(pDetails->item.mask & LVIF_IMAGE) {
-		//	pDetails->item.iImage = pDetails->item.iItem % 3;
-		//}
-		return 0;
-	}
-
 	void InsertGroups(int cnt_udf, int cnt_enum, int cnt_typedef)
 	{
 		LVGROUP group = {0};
@@ -265,6 +232,14 @@ public:
 		InsertGroup(2, &group);
 
 		EnableGroupView(TRUE);
+		udf_cnt_ = cnt_udf;
+		enum_cnt_ = cnt_enum;
+		typedef_cnt_ = cnt_typedef;
+
 	}
 
+private:
+	int udf_cnt_ = 0;
+	int enum_cnt_ = 0;
+	int typedef_cnt_ = 0;
 };
