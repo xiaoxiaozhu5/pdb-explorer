@@ -27,6 +27,9 @@
     <ClCompile Include="levenshtein.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fzf\fzf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Collector.h">

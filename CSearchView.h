@@ -1,5 +1,7 @@
 #pragma once
-#include "levenshtein.h"
+extern "C" {
+	#include "fzf/fzf.h"
+}
 
 #include "tsqueue.h"
 
@@ -47,6 +49,9 @@ public:
 
     DWORD Run()
     {
+		BOOL bFinish = FALSE;
+		fzf_slab_t *fzf_flab = fzf_make_default_slab();
+    	CAtlArray<PDBSYMBOL> tmp_symbols;
         while(!IsAborted())
         {
 			if (IsAborted()) Abort();
@@ -55,43 +60,57 @@ public:
 			if (!res)
 			{
 				if (IsAborted()) Abort();
+				if(!bFinish && m_symbols->m_bDone)
+				{
+					{
+						CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
+						tmp_symbols.Copy(m_symbols->m_aSymbols);
+					}
+
+					int index = 0;
+					for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
+					{
+						if (IsAborted()) Abort();
+						index = AddString(tmp_symbols.GetAt(i).sKey);
+					}
+					bFinish = TRUE;
+				}
 				continue;
 			}
 
-			m_list.ResetContent();
+			if(tmp_symbols.IsEmpty())
+			{
+				tasks_.pop_front();
+				continue;
+			}
 
 			auto task = tasks_.pop_front();
-
-			CAtlArray<PDBSYMBOL> tmp_symbols;
+			if(task.text.IsEmpty())
 			{
-				CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
-				tmp_symbols.Copy(m_symbols->m_aSymbols);
-			}
-
-			const int threshold = 100;
-			int shortest = 88;
-			int index = 0;
-			int shortest_index = 0;
-			for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
-			{
-				if (IsAborted()) Abort();
-				int distance = levenshteinDistance(task.text, tmp_symbols.GetAt(i).sKey);
-				if(distance < threshold)
+				m_list.ResetContent();
+				int index = 0;
+				for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
 				{
+					if (IsAborted()) Abort();
 					index = AddString(tmp_symbols.GetAt(i).sKey);
 				}
-				if(distance < shortest)
-				{
-					shortest = distance;
-					if(index != CB_ERR)
-					{
-						shortest_index = index;
-					}
-				}
+				continue;
 			}
-        	m_list.SetCurSel(shortest_index);
-			LogOut(TEXT("total:%d"), m_list.GetCount());
+
+			for(int i = m_list.GetCount() - 1; i >= 0; i--)
+			{
+				CString text;
+				m_list.GetText(i, text);
+				fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+				int score = fzf_get_score(CStringA(text).GetString(), fzf_pattern, fzf_flab);
+				if (score <= 0)
+				{
+					DeleteString(i);
+				}
+				fzf_free_pattern(fzf_pattern);
+			}
         }
+		fzf_free_slab(fzf_flab);
 
         return 0;
     }
@@ -99,19 +118,19 @@ public:
     BEGIN_MSG_MAP(CSearchView)
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
 	    MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
-        COMMAND_CODE_HANDLER(EN_UPDATE, OnEditUpdate)
+        COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChanged)
 		ALT_MSG_MAP(1)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
     END_MSG_MAP()
 
 private:
-    LRESULT OnEditUpdate(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
+    LRESULT OnEditChanged(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
     {
-		//ATLASSERT(m_edit.m_hWnd == hWndCtl);
+		ATLASSERT(m_edit.m_hWnd == hWndCtl);
 
-		//CString str;
-		//int nLength = m_edit.GetWindowText(str);
-		//tasks_.push_back({str});
+		CString str;
+		int nLength = m_edit.GetWindowText(str);
+		tasks_.push_back({str});
         return 0;
     }
 
@@ -119,11 +138,6 @@ private:
     {
 		if (VK_RETURN == wParam)
 		{
-			CString text;
-			if(0 < this->GetWindowText(text))
-			{
-				AddString(text);
-			}
 			::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
 		}
 		if (VK_ESCAPE == wParam) ::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDCANCEL, 0), reinterpret_cast<LPARAM>(m_hWnd));

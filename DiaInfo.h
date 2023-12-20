@@ -43,14 +43,14 @@ public:
 		{
 			return sRTF;
 		}
-		CComPtr<IDiaSymbol> symbol = NULL;
+		IDiaSymbol* symbol = NULL;
 		m_session->get_globalScope(&m_global);
 
-		CComPtr<IDiaEnumSymbols> enum_symbols = NULL;
 		ULONG celt = 1;
 		bool bFind = false;
 		if(Symbol.dwSymTag != 0)
 		{
+			CComPtr<IDiaEnumSymbols> enum_symbols = NULL;
 			m_global->findChildren((enum SymTagEnum)Symbol.dwSymTag, NULL, nsNone, &enum_symbols);
 			while (SUCCEEDED(enum_symbols->Next(1, &symbol, &celt)) && (celt == 1))
 			{
@@ -61,12 +61,14 @@ public:
 					bFind = true;
 					break;
 				}
+				symbol->Release();
 			}
 			if (bFind)
 			{
 				CSym* sym = CSym::NewSym(symbol);
 				sym->Format(&sRTF);
 				CSym::Delete(sym);
+				symbol->Release();
 			}
 		}
 		else
@@ -74,6 +76,7 @@ public:
 			enum SymTagEnum ste[] = { SymTagUDT, SymTagEnum, SymTagTypedef };
 			for (int i = 0; i < _countof(ste); ++i)
 			{
+				CComPtr<IDiaEnumSymbols> enum_symbols = NULL;
 				m_global->findChildren(ste[i], NULL, nsNone, &enum_symbols);
 				while (SUCCEEDED(enum_symbols->Next(1, &symbol, &celt)) && (celt == 1))
 				{
@@ -84,12 +87,14 @@ public:
 						bFind = true;
 						break;
 					}
+					symbol->Release();
 				}
 				if (bFind)
 				{
 					CSym* sym = CSym::NewSym(symbol);
 					sym->Format(&sRTF);
 					CSym::Delete(sym);
+					symbol->Release();
 					break;
 				}
 			}

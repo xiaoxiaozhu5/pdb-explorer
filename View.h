@@ -341,7 +341,7 @@ public:
 
 	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
 	{
-		PDBSYMBOL Symbol;
+		PDBSYMBOL Symbol{};
 		if(0 < m_ctrlSearch.GetWindowText(Symbol.sKey))
 		{
 			CDiaInfo info;
