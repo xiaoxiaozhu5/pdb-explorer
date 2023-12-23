@@ -28,8 +28,16 @@ public:
     {
         if(NULL == BaseComboBox::Create(hWndParent, lpRect, NULL, dwStyle, 0, nID))
 			return FALSE;
-		m_list.SubclassWindow(FindWindowEx(m_hWnd, NULL, _T("ComboLBox"), NULL));
-		m_edit = FindWindowEx(m_hWnd, NULL, WC_EDIT, NULL);
+		//m_list.SubclassWindow(FindWindowEx(m_hWnd, NULL, _T("ComboLBox"), NULL));
+		//m_edit = FindWindowEx(m_hWnd, NULL, WC_EDIT, NULL);
+
+		COMBOBOXINFO comboboxinfo{};
+		comboboxinfo.cbSize = sizeof(COMBOBOXINFO);
+		if(GetComboBoxInfo(&comboboxinfo))
+		{
+			m_list.SubclassWindow(comboboxinfo.hwndList);
+			m_edit.Attach(comboboxinfo.hwndItem);
+		}
 
 		return TRUE;
     }
