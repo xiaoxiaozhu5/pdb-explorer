@@ -77,10 +77,10 @@ public:
 		m_collector.Init(m_hWnd, pstrFilename);
 		m_collector.Start();
 
-		m_ctrlSearch.Abort();
-		m_ctrlSearch.Stop();
+		//m_ctrlSearch.Abort();
+		//m_ctrlSearch.Stop();
 		m_ctrlSearch.SetDataSource(&m_collector);
-		m_ctrlSearch.Start();
+		//m_ctrlSearch.Start();
 
 		m_lLastSize = 0;
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
@@ -143,8 +143,8 @@ public:
 			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
 			0,IDC_TREE);
 		m_ctrlView.LimitText();
-		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT, rcDefault, m_hWnd, 0);
-		//m_ctrlSearch.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT);
+		//m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT | LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_AUTOARRANGE | LVS_ALIGNTOP, rcDefault, m_hWnd, 0);
+		m_ctrlSearch.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE |  WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT);
 		m_ctrlContainer.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_ctrlContainer.AddItem(m_ctrlList->m_hWnd);
 		m_ctrlContainer.AddItem(m_ctrlSearch);
