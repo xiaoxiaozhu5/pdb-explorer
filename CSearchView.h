@@ -19,9 +19,22 @@ public:
     };
 	tsqueue<task> tasks_;
 
-    CSearchView() : m_list(this, 1),
+    CSearchView() : m_list(this, 2),
 					m_symbols(NULL)
     {
+		CLogFont lf;
+		lf.lfWeight = FW_NORMAL;
+		if(RunTimeHelper::IsVista())
+		{
+			lf.SetHeight(9);
+			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Consolas"));
+		}
+		else
+		{
+			lf.SetHeight(8);
+			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Tahoma"));
+		}
+		m_font.CreateFontIndirect(&lf);
     }
 
 #if 0
@@ -128,7 +141,7 @@ public:
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		MESSAGE_HANDLER(WM_CTLCOLORSTATIC, OnBackColor)
         COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChanged)
-		ALT_MSG_MAP(1)
+		ALT_MSG_MAP(2)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
     END_MSG_MAP()
@@ -137,13 +150,37 @@ private:
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
     {
 		//DefWindowProc();
-		m_list.Create(*this, rcDefault, NULL, WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_OWNERDATA | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+		m_list.Create(*this, rcDefault, NULL, WS_CHILD | LVS_REPORT | LVS_OWNERDATA | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_edit.Create(*this, rcDefault, NULL, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_NOHIDESEL | ES_SAVESEL | ES_SELECTIONBAR);
 
-		RECT rc{0};
-		GetClientRect(&rc);
-		m_edit.MoveWindow(0, 0, rc.right-rc.left, 20);
-		m_list.MoveWindow(0, 23, rc.right-rc.left, rc.bottom-rc.top-23);
+		m_edit.SetFont(m_font);
+
+		CClientDC dc(*this);
+		HFONT hOldFont = dc.SelectFont(m_font);
+		TEXTMETRIC tm;
+		dc.GetTextMetrics(&tm);
+		int nLogPix = dc.GetDeviceCaps(LOGPIXELSX);
+		dc.SelectFont(hOldFont);
+		int cxTab = ::MulDiv(tm.tmAveCharWidth * 8, 1440, nLogPix);
+		if(cxTab != -1)
+		{
+			PARAFORMAT pf;
+			pf.cbSize = sizeof(PARAFORMAT);
+			pf.dwMask = PFM_TABSTOPS;
+			pf.cTabCount = MAX_TAB_STOPS;
+			for(int i = 0; i < MAX_TAB_STOPS; ++i)
+			{
+				pf.rgxTabs[i] = (i + 1) * cxTab;
+				m_edit.SetParaFormat(pf);
+			}
+			dc.SelectFont(hOldFont);
+			m_edit.SetModify(FALSE);
+		}
+
+		//RECT rc{0};
+		//GetClientRect(&rc);
+		//m_edit.MoveWindow(0, 0, rc.right-rc.left, tm.tmHeight + tm.tmExternalLeading + 3);
+		//m_list.MoveWindow(0, tm.tmHeight + tm.tmExternalLeading + 3 + 2, rc.right-rc.left, rc.bottom-rc.top-(tm.tmHeight + tm.tmExternalLeading + 3 + 2));
 		return 0;
     }
 
@@ -176,17 +213,22 @@ private:
 
     LRESULT OnSize(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     {
-		int x = GET_X_LPARAM(lParam);
-    	int y = GET_Y_LPARAM(lParam);
+		CClientDC dc(*this);
+		HFONT hOldFont = dc.SelectFont(m_font);
+		TEXTMETRIC tm;
+		dc.GetTextMetrics(&tm);
+
+		int x = GET_X_LPARAM(lParam);//width
+    	int y = GET_Y_LPARAM(lParam);//heigh
 		RECT rc{0};
 		GetClientRect(&rc);
 		if(m_edit)
 		{
-			m_edit.MoveWindow(0, 0, rc.right-rc.left, 23);
+			m_edit.MoveWindow(0, 0, x, tm.tmHeight + tm.tmExternalLeading + 3);
 		}
 		if(m_list)
 		{
-			m_list.MoveWindow(0, 23, rc.right-rc.left, rc.bottom-rc.top-23);
+			m_list.MoveWindow(0, tm.tmHeight + tm.tmExternalLeading + 3 + 2, x, rc.bottom-rc.top-(tm.tmHeight + tm.tmExternalLeading + 3 + 2));
 		}
 		return 0;
     }
@@ -246,4 +288,5 @@ private:
     CPdbCollector* m_symbols;
     CContainedWindowT<CListViewCtrl> m_list;
     CRichEditCtrl m_edit;
+	CFont m_font;
 };
