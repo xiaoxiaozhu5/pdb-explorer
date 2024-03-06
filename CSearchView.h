@@ -3,8 +3,140 @@ extern "C" {
 	#include "fzf/fzf.h"
 }
 
-#include "tsqueue.h"
+#include <strsafe.h>
 
+#include "tsqueue.h"
+#include "SearchBand.h"
+
+class CSearchBar : 
+	public CWindowImpl<CSearchBar, CReBarCtrl>
+{
+
+public:
+
+	DECLARE_WND_SUPERCLASS(_T("WTL_NavigationBar"), CReBarCtrl::GetWndClassName())
+
+	CSearchRootView m_wndSearchBand;
+
+	BEGIN_MSG_MAP(CSearchView)
+		MESSAGE_HANDLER(WM_CREATE, OnCreate)
+		REFLECT_NOTIFICATIONS()
+	END_MSG_MAP()
+
+	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+	{
+		LRESULT lRes = DefWindowProc();
+
+		::SetWindowTheme(m_hWnd, L"NavbarComposited", NULL);
+
+		m_wndSearchBand.Create(m_hWnd, rcDefault, NULL, 
+			WS_CHILD | WS_GROUP | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_GROUP,
+			WS_EX_CONTROLPARENT);
+
+		enum { 
+			CX_SEARCH = 200,
+			CY_SEARCH = 28,
+		};
+
+		REBARBANDINFO rbi = { 0 };
+		rbi.cbSize = sizeof(REBARBANDINFO);
+		rbi.fMask = RBBIM_CHILD | RBBIM_CHILDSIZE | RBBIM_STYLE | RBBIM_SIZE | RBBIM_IDEALSIZE;
+		rbi.fStyle = RBBS_TOPALIGN | RBBS_NOGRIPPER;
+		rbi.hwndChild = m_wndSearchBand;
+		rbi.cx = rbi.cxIdeal = rbi.cxMinChild = CX_SEARCH;
+		rbi.cyChild = rbi.cyMinChild = CY_SEARCH;
+		InsertBand(0, &rbi);
+
+		return lRes;
+	}
+};
+
+class CSearchView : public CWindowImpl<CSearchView>
+{
+public:
+    DECLARE_WND_CLASS(_T("WTL_SearchView"))
+
+    CListViewCtrl m_list;
+	CSearchBar m_reBar;
+
+	CSearchView() {}
+
+	BEGIN_MSG_MAP(CSearchView)
+		MESSAGE_HANDLER(WM_CREATE, OnCreate)
+		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+		MESSAGE_HANDLER(WM_SIZE, OnSize)
+		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
+	END_MSG_MAP()
+
+	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+	{
+		auto s = DefWindowProc();
+		m_list.Create(m_hWnd, rcDefault, NULL, WS_GROUP | WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_SHOWSELALWAYS | LVS_ALIGNTOP | LVS_OWNERDATA | LVS_REPORT);
+		//m_list.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT);
+		m_reBar.Create(m_hWnd, rcDefault, NULL,
+			WS_CHILD | WS_VISIBLE | WS_GROUP | WS_CLIPSIBLINGS | WS_CLIPCHILDREN |
+			RBS_VARHEIGHT | RBS_AUTOSIZE | RBS_VERTICALGRIPPER |
+			CCS_NODIVIDER | CCS_NOPARENTALIGN | CCS_TOP,
+			WS_EX_CONTROLPARENT);
+
+		//m_list.InsertColumn(0, L"date", LVCFMT_LEFT, 50);
+		//m_list.InsertColumn(1, L"num", LVCFMT_LEFT, 50);
+		//m_list.InsertItem(0, L"dddddddddd");
+		//m_list.InsertItem(1, L"dffffffefefefef");
+		m_list.InsertColumn(0, _T(""), LVCFMT_LEFT, 300);
+		m_list.ModifyStyle(LVS_REPORT |LVS_NOCOLUMNHEADER, 
+			LVS_REPORT|LVS_NOCOLUMNHEADER);
+		m_list.SetExtendedListViewStyle (LVS_EX_DOUBLEBUFFER, 
+			LVS_EX_DOUBLEBUFFER);
+		DWORD dwStyle = m_list.GetExtendedListViewStyle();
+		dwStyle |= LVS_EX_FULLROWSELECT;
+		m_list.SetExtendedListViewStyle(dwStyle);
+		m_list.SetItemCount(10);
+		for(int i = 0; i < 10; ++i)
+		{
+			LVITEM lvi = { 0 };
+			lvi.mask = LVIF_TEXT;
+			lvi.iItem = i;
+			lvi.iSubItem = 0;
+			lvi.pszText = LPSTR_TEXTCALLBACK;
+			lvi.cchTextMax = MAX_PATH;
+			int n = m_list.InsertItem(&lvi);
+		}
+		return 0;
+	}
+
+	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+	{
+		bHandled = FALSE;
+		return 0;
+	}
+
+	LRESULT OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& bHandled)
+	{
+		int x = GET_X_LPARAM(lParam);//width
+    	int y = GET_Y_LPARAM(lParam);//heigh
+		CRect rcClient(0, 0, x, y);
+		CRect rcToolBar(1, 2, rcClient.right - 2, 30);
+		CRect rcList(1, rcToolBar.bottom + 2, rcClient.right - 2, rcClient.bottom - 2);
+		m_reBar.SetWindowPos(NULL, &rcToolBar, SWP_NOACTIVATE | SWP_NOZORDER);
+		m_list.SetWindowPos(NULL, &rcList, SWP_NOACTIVATE | SWP_NOZORDER);
+		bHandled = FALSE;
+		return 0;
+	}
+
+	LRESULT OnTvnGetdispinfoTree(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled)
+	{
+		NMLVDISPINFO* pDetails = reinterpret_cast<NMLVDISPINFO*>(pnmh);
+		if (pDetails->item.mask & LVIF_TEXT) 
+		{
+			StringCchPrintf(pDetails->item.pszText,
+				pDetails->item.cchTextMax, _T("Item %i"), pDetails->item.iItem + 1);
+		}
+		return 0;
+	}
+};
+
+#if 0
 class CSearchView : public CWindowImpl<CSearchView, CWindow>
 					//public CThreadImpl<CSearchView>
 {
@@ -19,8 +151,7 @@ public:
     };
 	tsqueue<task> tasks_;
 
-    CSearchView() : m_list(this, 2),
-					m_symbols(NULL)
+    CSearchView() :	m_symbols(NULL)
     {
 		CLogFont lf;
 		lf.lfWeight = FW_NORMAL;
@@ -141,7 +272,6 @@ public:
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		MESSAGE_HANDLER(WM_CTLCOLORSTATIC, OnBackColor)
         COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChanged)
-		ALT_MSG_MAP(2)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
     END_MSG_MAP()
@@ -150,7 +280,7 @@ private:
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
     {
 		//DefWindowProc();
-		m_list.Create(*this, rcDefault, NULL, WS_CHILD | LVS_REPORT | LVS_OWNERDATA | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+		m_list.Create(*this, rcDefault, NULL, WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_OWNERDATA | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_edit.Create(*this, rcDefault, NULL, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_NOHIDESEL | ES_SAVESEL | ES_SELECTIONBAR);
 
 		m_edit.SetFont(m_font);
@@ -286,7 +416,8 @@ private:
 	}
 
     CPdbCollector* m_symbols;
-    CContainedWindowT<CListViewCtrl> m_list;
+    CListViewCtrl m_list;
     CRichEditCtrl m_edit;
 	CFont m_font;
 };
+#endif

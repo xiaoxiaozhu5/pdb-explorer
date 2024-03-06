@@ -79,7 +79,7 @@ public:
 
 		//m_ctrlSearch.Abort();
 		//m_ctrlSearch.Stop();
-		m_ctrlSearch.SetDataSource(&m_collector);
+		//m_ctrlSearch.SetDataSource(&m_collector);
 		//m_ctrlSearch.Start();
 
 		m_lLastSize = 0;
