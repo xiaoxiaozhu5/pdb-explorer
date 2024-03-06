@@ -6,66 +6,50 @@ extern "C" {
 #include <strsafe.h>
 
 #include "tsqueue.h"
-#include "SearchBand.h"
 
-class CSearchBar : 
-	public CWindowImpl<CSearchBar, CReBarCtrl>
-{
-
-public:
-
-	DECLARE_WND_SUPERCLASS(_T("WTL_NavigationBar"), CReBarCtrl::GetWndClassName())
-
-	CSearchRootView m_wndSearchBand;
-
-	BEGIN_MSG_MAP(CSearchView)
-		MESSAGE_HANDLER(WM_CREATE, OnCreate)
-		REFLECT_NOTIFICATIONS()
-	END_MSG_MAP()
-
-	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-	{
-		LRESULT lRes = DefWindowProc();
-
-		::SetWindowTheme(m_hWnd, L"NavbarComposited", NULL);
-
-		m_wndSearchBand.Create(m_hWnd, rcDefault, NULL, 
-			WS_CHILD | WS_GROUP | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_GROUP,
-			WS_EX_CONTROLPARENT);
-
-		enum { 
-			CX_SEARCH = 200,
-			CY_SEARCH = 28,
-		};
-
-		REBARBANDINFO rbi = { 0 };
-		rbi.cbSize = sizeof(REBARBANDINFO);
-		rbi.fMask = RBBIM_CHILD | RBBIM_CHILDSIZE | RBBIM_STYLE | RBBIM_SIZE | RBBIM_IDEALSIZE;
-		rbi.fStyle = RBBS_TOPALIGN | RBBS_NOGRIPPER;
-		rbi.hwndChild = m_wndSearchBand;
-		rbi.cx = rbi.cxIdeal = rbi.cxMinChild = CX_SEARCH;
-		rbi.cyChild = rbi.cyMinChild = CY_SEARCH;
-		InsertBand(0, &rbi);
-
-		return lRes;
-	}
-};
-
-class CSearchView : public CWindowImpl<CSearchView>
+class CSearchView : public CWindowImpl<CSearchView>,
+					public CThreadImpl<CSearchView>
 {
 public:
     DECLARE_WND_CLASS(_T("WTL_SearchView"))
 
+	CFont m_font;
     CListViewCtrl m_list;
-	CSearchBar m_reBar;
+	CEdit m_search;
+    CPdbCollector* m_symbols;
 
-	CSearchView() {}
+	struct task
+    {
+	    CString text;
+    };
+	tsqueue<task> tasks_;
+
+	CSearchView() 
+	{
+		CLogFont lf;
+		lf.lfWeight = FW_NORMAL;
+		if(RunTimeHelper::IsVista())
+		{
+			lf.SetHeight(9);
+			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Consolas"));
+		}
+		else
+		{
+			lf.SetHeight(8);
+			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Tahoma"));
+		}
+		m_font.CreateFontIndirect(&lf);
+	}
 
 	BEGIN_MSG_MAP(CSearchView)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
+		COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChange)
+		//COMMAND_CODE_HANDLER(EN_SETFOCUS, OnEditChange)
+		//COMMAND_CODE_HANDLER(EN_KILLFOCUS, OnEditChange)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
+		REFLECT_NOTIFICATIONS()
 	END_MSG_MAP()
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
@@ -73,11 +57,10 @@ public:
 		auto s = DefWindowProc();
 		m_list.Create(m_hWnd, rcDefault, NULL, WS_GROUP | WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_SHOWSELALWAYS | LVS_ALIGNTOP | LVS_OWNERDATA | LVS_REPORT);
 		//m_list.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT);
-		m_reBar.Create(m_hWnd, rcDefault, NULL,
-			WS_CHILD | WS_VISIBLE | WS_GROUP | WS_CLIPSIBLINGS | WS_CLIPCHILDREN |
-			RBS_VARHEIGHT | RBS_AUTOSIZE | RBS_VERTICALGRIPPER |
-			CCS_NODIVIDER | CCS_NOPARENTALIGN | CCS_TOP,
-			WS_EX_CONTROLPARENT);
+		m_search.Create(m_hWnd, rcDefault, NULL, 
+			WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | 
+			ES_LEFT | ES_AUTOHSCROLL | WS_BORDER, 0);
+		m_search.SetFont(m_font);
 
 		//m_list.InsertColumn(0, L"date", LVCFMT_LEFT, 50);
 		//m_list.InsertColumn(1, L"num", LVCFMT_LEFT, 50);
@@ -116,10 +99,21 @@ public:
 		int x = GET_X_LPARAM(lParam);//width
     	int y = GET_Y_LPARAM(lParam);//heigh
 		CRect rcClient(0, 0, x, y);
-		CRect rcToolBar(1, 2, rcClient.right - 2, 30);
+		CRect rcToolBar(1, 2, rcClient.right - 2, 24);
 		CRect rcList(1, rcToolBar.bottom + 2, rcClient.right - 2, rcClient.bottom - 2);
-		m_reBar.SetWindowPos(NULL, &rcToolBar, SWP_NOACTIVATE | SWP_NOZORDER);
+		m_search.SetWindowPos(NULL, &rcToolBar, SWP_NOACTIVATE | SWP_NOZORDER);
 		m_list.SetWindowPos(NULL, &rcList, SWP_NOACTIVATE | SWP_NOZORDER);
+		bHandled = FALSE;
+		return 0;
+	}
+
+	LRESULT OnEditChange(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+	{
+		m_search.Invalidate(TRUE);
+		CString str;
+		int nLength = m_search.GetWindowText(str);
+		tasks_.push_back({str});
+
 		bHandled = FALSE;
 		return 0;
 	}
@@ -129,11 +123,81 @@ public:
 		NMLVDISPINFO* pDetails = reinterpret_cast<NMLVDISPINFO*>(pnmh);
 		if (pDetails->item.mask & LVIF_TEXT) 
 		{
-			StringCchPrintf(pDetails->item.pszText,
-				pDetails->item.cchTextMax, _T("Item %i"), pDetails->item.iItem + 1);
+			CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
+			const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[pDetails->item.iItem];
+			pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
 		}
 		return 0;
 	}
+
+    void SetDataSource(CPdbCollector* collector)
+    {
+        m_search.Clear();
+        m_list.DeleteAllItems();
+		m_symbols = collector;
+        //while(m_list.DeleteString(0));
+    }
+
+    DWORD Run()
+    {
+		BOOL bFinish = FALSE;
+		fzf_slab_t *fzf_flab = fzf_make_default_slab();
+    	CAtlArray<PDBSYMBOL> tmp_symbols;
+        while(!IsAborted())
+        {
+			if (IsAborted()) Abort();
+
+			int res = tasks_.wait(100);
+			if (!res)
+			{
+				if (IsAborted()) Abort();
+				if(!bFinish && m_symbols->m_bDone)
+				{
+					{
+						CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
+						tmp_symbols.Copy(m_symbols->m_aSymbols);
+					}
+
+					if (IsAborted()) Abort();
+					m_list.SetItemCount(tmp_symbols.GetCount());
+					bFinish = TRUE;
+				}
+				continue;
+			}
+
+			if(tmp_symbols.IsEmpty())
+			{
+				tasks_.pop_front();
+				continue;
+			}
+
+			auto task = tasks_.pop_front();
+			if(task.text.IsEmpty())
+			{
+				m_list.DeleteAllItems();
+				if (IsAborted()) Abort();
+				m_list.SetItemCount(tmp_symbols.GetCount());
+				continue;
+			}
+
+			for(int i = m_list.GetItemCount() - 1; i >= 0; i--)
+			{
+				CString text;
+				m_list.GetItemText(i, 0, text);
+				fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+				int score = fzf_get_score(CStringA(text).GetString(), fzf_pattern, fzf_flab);
+				if (score <= 0)
+				{
+					m_list.DeleteItem(i);
+				}
+				fzf_free_pattern(fzf_pattern);
+			}
+        }
+		fzf_free_slab(fzf_flab);
+
+        return 0;
+    }
+
 };
 
 #if 0

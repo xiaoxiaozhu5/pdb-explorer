@@ -79,8 +79,8 @@ public:
 
 		//m_ctrlSearch.Abort();
 		//m_ctrlSearch.Stop();
-		//m_ctrlSearch.SetDataSource(&m_collector);
-		//m_ctrlSearch.Start();
+		m_ctrlSearch.SetDataSource(&m_collector);
+		m_ctrlSearch.Start();
 
 		m_lLastSize = 0;
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
