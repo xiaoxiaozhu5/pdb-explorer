@@ -17,6 +17,7 @@ public:
     CListViewCtrl m_list;
 	CEdit m_search;
     CPdbCollector* m_symbols;
+	std::vector<int> m_filtered_index;
 
 	struct task
     {
@@ -45,6 +46,8 @@ public:
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
+        MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
+        MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChange)
 		//COMMAND_CODE_HANDLER(EN_SETFOCUS, OnEditChange)
 		//COMMAND_CODE_HANDLER(EN_KILLFOCUS, OnEditChange)
@@ -55,7 +58,7 @@ public:
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 	{
 		auto s = DefWindowProc();
-		m_list.Create(m_hWnd, rcDefault, NULL, WS_GROUP | WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_SHOWSELALWAYS | LVS_ALIGNTOP | LVS_OWNERDATA | LVS_REPORT);
+		m_list.Create(m_hWnd, rcDefault, NULL, WS_GROUP | WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_SHOWSELALWAYS | LVS_ALIGNTOP | LVS_OWNERDATA | LVS_REPORT | LVS_NOCOLUMNHEADER);
 		//m_list.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT);
 		m_search.Create(m_hWnd, rcDefault, NULL, 
 			WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | 
@@ -66,25 +69,11 @@ public:
 		//m_list.InsertColumn(1, L"num", LVCFMT_LEFT, 50);
 		//m_list.InsertItem(0, L"dddddddddd");
 		//m_list.InsertItem(1, L"dffffffefefefef");
-		m_list.InsertColumn(0, _T(""), LVCFMT_LEFT, 300);
-		m_list.ModifyStyle(LVS_REPORT |LVS_NOCOLUMNHEADER, 
-			LVS_REPORT|LVS_NOCOLUMNHEADER);
-		m_list.SetExtendedListViewStyle (LVS_EX_DOUBLEBUFFER, 
-			LVS_EX_DOUBLEBUFFER);
+		m_list.InsertColumn(0, _T(""), LVCFMT_LEFT, 500);
 		DWORD dwStyle = m_list.GetExtendedListViewStyle();
+		dwStyle |= LVS_EX_DOUBLEBUFFER;
 		dwStyle |= LVS_EX_FULLROWSELECT;
 		m_list.SetExtendedListViewStyle(dwStyle);
-		m_list.SetItemCount(10);
-		for(int i = 0; i < 10; ++i)
-		{
-			LVITEM lvi = { 0 };
-			lvi.mask = LVIF_TEXT;
-			lvi.iItem = i;
-			lvi.iSubItem = 0;
-			lvi.pszText = LPSTR_TEXTCALLBACK;
-			lvi.cchTextMax = MAX_PATH;
-			int n = m_list.InsertItem(&lvi);
-		}
 		return 0;
 	}
 
@@ -124,16 +113,46 @@ public:
 		if (pDetails->item.mask & LVIF_TEXT) 
 		{
 			CComCritSecLock<CComCriticalSection> lock(m_symbols->m_lock);
-			const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[pDetails->item.iItem];
-			pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+			if(m_filtered_index.empty())
+			{
+				const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[pDetails->item.iItem];
+				pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+				//StringCchPrintf(pDetails->item.pszText,
+				//	pDetails->item.cchTextMax, _T("%d %s"), pDetails->item.iItem, (LPCTSTR)Symbol.sKey);
+			}
+			else
+			{
+				auto index = m_filtered_index[pDetails->item.iItem];
+				const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[index];
+				pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+				//StringCchPrintf(pDetails->item.pszText,
+				//	pDetails->item.cchTextMax, _T("%d %s"), index, (LPCTSTR)Symbol.sKey);
+			}
 		}
 		return 0;
 	}
 
+    LRESULT OnKeyDown(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
+    {
+		if (VK_RETURN == wParam)
+		{
+			::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
+		}
+		if (VK_ESCAPE == wParam) ::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDCANCEL, 0), reinterpret_cast<LPARAM>(m_hWnd));
+		bHandled = FALSE;
+		return 0;
+    }
+
+    LRESULT OnListLButtonDblClk(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+    {
+    	::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
+		return 0;
+    }
+
     void SetDataSource(CPdbCollector* collector)
     {
         m_search.Clear();
-        m_list.DeleteAllItems();
+		m_list.DeleteAllItems();
 		m_symbols = collector;
         //while(m_list.DeleteString(0));
     }
@@ -159,6 +178,7 @@ public:
 					}
 
 					if (IsAborted()) Abort();
+					m_filtered_index.clear();
 					m_list.SetItemCount(tmp_symbols.GetCount());
 					bFinish = TRUE;
 				}
@@ -174,24 +194,27 @@ public:
 			auto task = tasks_.pop_front();
 			if(task.text.IsEmpty())
 			{
+				m_filtered_index.clear();
 				m_list.DeleteAllItems();
 				if (IsAborted()) Abort();
 				m_list.SetItemCount(tmp_symbols.GetCount());
 				continue;
 			}
 
-			for(int i = m_list.GetItemCount() - 1; i >= 0; i--)
+			m_list.DeleteAllItems();
+			std::vector<int> filtered_index;
+			for(size_t i = 0; i < tmp_symbols.GetCount(); ++i)
 			{
-				CString text;
-				m_list.GetItemText(i, 0, text);
 				fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
-				int score = fzf_get_score(CStringA(text).GetString(), fzf_pattern, fzf_flab);
-				if (score <= 0)
+				int score = fzf_get_score(CStringA(tmp_symbols[i].sKey).GetString(), fzf_pattern, fzf_flab);
+				if (score > 0)
 				{
-					m_list.DeleteItem(i);
+					filtered_index.push_back(i);
 				}
 				fzf_free_pattern(fzf_pattern);
 			}
+			m_list.SetItemCount(filtered_index.size());
+			m_filtered_index.swap(filtered_index);
         }
 		fzf_free_slab(fzf_flab);
 
@@ -331,11 +354,11 @@ public:
 
     BEGIN_MSG_MAP(CSearchView)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
-        MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
 	    MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		MESSAGE_HANDLER(WM_CTLCOLORSTATIC, OnBackColor)
         COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChanged)
+        MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
     END_MSG_MAP()

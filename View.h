@@ -292,6 +292,8 @@ public:
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
 		const PDBSYMBOL& Symbol = m_collector.m_aSymbols[pItem->iItem];
 		pItem->pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+		//StringCchPrintf(pItem->pszText,
+		//pItem->cchTextMax, _T("%d %s"), pItem->iItem, (LPCTSTR)Symbol.sKey);
 		bHandled = TRUE;
 		return 0;
 	}
