@@ -14,8 +14,8 @@ public:
     DECLARE_WND_CLASS(_T("WTL_SearchView"))
 
 	CFont m_font;
-    CListViewCtrl m_list;
-	CEdit m_search;
+    CContainedWindowT<CListViewCtrl> m_list;
+	CContainedWindowT<CEdit> m_search;
     CPdbCollector* m_symbols;
 	std::vector<int> m_filtered_index;
 
@@ -25,7 +25,7 @@ public:
     };
 	tsqueue<task> tasks_;
 
-	CSearchView() 
+	CSearchView() : m_search(this, 1), m_list(this, 1)
 	{
 		CLogFont lf;
 		lf.lfWeight = FW_NORMAL;
@@ -46,19 +46,20 @@ public:
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
+		COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChange)
+		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
+		ALT_MSG_MAP(1)
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
         MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
-		COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChange)
 		//COMMAND_CODE_HANDLER(EN_SETFOCUS, OnEditChange)
 		//COMMAND_CODE_HANDLER(EN_KILLFOCUS, OnEditChange)
-		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
 		REFLECT_NOTIFICATIONS()
 	END_MSG_MAP()
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 	{
 		auto s = DefWindowProc();
-		m_list.Create(m_hWnd, rcDefault, NULL, WS_GROUP | WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_SHOWSELALWAYS | LVS_ALIGNTOP | LVS_OWNERDATA | LVS_REPORT | LVS_NOCOLUMNHEADER);
+		m_list.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_SHOWSELALWAYS | LVS_ALIGNTOP | LVS_OWNERDATA | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_AUTOARRANGE);
 		//m_list.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT);
 		m_search.Create(m_hWnd, rcDefault, NULL, 
 			WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | 
@@ -69,7 +70,7 @@ public:
 		//m_list.InsertColumn(1, L"num", LVCFMT_LEFT, 50);
 		//m_list.InsertItem(0, L"dddddddddd");
 		//m_list.InsertItem(1, L"dffffffefefefef");
-		m_list.InsertColumn(0, _T(""), LVCFMT_LEFT, 500);
+		m_list.InsertColumn(0, _T("Item Name"), LVCFMT_LEFT, 500);
 		DWORD dwStyle = m_list.GetExtendedListViewStyle();
 		dwStyle |= LVS_EX_DOUBLEBUFFER;
 		dwStyle |= LVS_EX_FULLROWSELECT;
@@ -92,6 +93,8 @@ public:
 		CRect rcList(1, rcToolBar.bottom + 2, rcClient.right - 2, rcClient.bottom - 2);
 		m_search.SetWindowPos(NULL, &rcToolBar, SWP_NOACTIVATE | SWP_NOZORDER);
 		m_list.SetWindowPos(NULL, &rcList, SWP_NOACTIVATE | SWP_NOZORDER);
+		m_list.SetColumnWidth(0, LVSCW_AUTOSIZE_USEHEADER);
+		//m_list.ShowScrollBar(SB_HORZ, FALSE);
 		bHandled = FALSE;
 		return 0;
 	}
