@@ -48,9 +48,10 @@ public:
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChange)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
+		NOTIFY_CODE_HANDLER(NM_DBLCLK, OnSelChanged)
 		ALT_MSG_MAP(1)
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
-        MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
+        //MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
 		//COMMAND_CODE_HANDLER(EN_SETFOCUS, OnEditChange)
 		//COMMAND_CODE_HANDLER(EN_KILLFOCUS, OnEditChange)
 		REFLECT_NOTIFICATIONS()
@@ -120,6 +121,7 @@ public:
 			{
 				const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[pDetails->item.iItem];
 				pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+				pDetails->item.iSubItem = Symbol.dwSymTag;
 				//StringCchPrintf(pDetails->item.pszText,
 				//	pDetails->item.cchTextMax, _T("%d %s"), pDetails->item.iItem, (LPCTSTR)Symbol.sKey);
 			}
@@ -128,6 +130,7 @@ public:
 				auto index = m_filtered_index[pDetails->item.iItem];
 				const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[index];
 				pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+				pDetails->item.iSubItem = Symbol.dwSymTag;
 				//StringCchPrintf(pDetails->item.pszText,
 				//	pDetails->item.cchTextMax, _T("%d %s"), index, (LPCTSTR)Symbol.sKey);
 			}
@@ -151,6 +154,15 @@ public:
     	::PostMessage(GetParent(), WM_COMMAND, MAKEWPARAM(IDOK, 0), reinterpret_cast<LPARAM>(m_hWnd));
 		return 0;
     }
+
+	LRESULT OnSelChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
+	{
+		CString text;
+		NM_LISTVIEW* pDetails = reinterpret_cast<NM_LISTVIEW*>(pnmh);
+		m_list.GetItemText(pDetails->iItem, 0, text);
+		::SendMessage(GetParent(), WM_SHOW_ITEM, pDetails->iSubItem, (LPARAM)(LPCTSTR)text);
+		return 0;
+	}
 
     void SetDataSource(CPdbCollector* collector)
     {

@@ -83,13 +83,13 @@ public:
 		return TRUE;
 	}
 
-	void Attach(HANDLE hThread)
+	void AttachT(HANDLE hThread)
 	{
 		_ASSERTE(m_hThread==NULL);
 		m_hThread = hThread;
 	}
 
-	HANDLE Detach()
+	HANDLE DetachT()
 	{
 		HANDLE hThread = m_hThread;
 		m_hThread = NULL;

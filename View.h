@@ -117,6 +117,7 @@ public:
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
 		MESSAGE_HANDLER(WM_USER_LOAD_START, OnAnimStart)
 		MESSAGE_HANDLER(WM_USER_LOAD_END, OnAnimEnd)
+		MESSAGE_HANDLER(WM_SHOW_ITEM, OnShowItem)
 		NOTIFY_CODE_HANDLER(NM_DBLCLK, OnSelChanged)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
@@ -201,6 +202,17 @@ public:
 		CString st;
 		st.Format(s, m_lLastSize);
 		::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
+		return 0;
+	}
+
+	LRESULT OnShowItem(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+	{
+		CDiaInfo info;
+		PDBSYMBOL symbol;
+		symbol.dwSymTag = (DWORD)wParam;
+		symbol.sKey = (LPCTSTR)lParam;
+		auto sRTF = info.GetSymbolInfo(m_path, symbol);
+		m_ctrlView.Load(sRTF);
 		return 0;
 	}
 
@@ -340,9 +352,10 @@ public:
 		return 0;
 	}
 
-	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& bHandled)
 	{
 		PDBSYMBOL Symbol{};
+		m_ctrlSearch.m_list.GetItemText(m_ctrlSearch.m_list.GetSelectedIndex(), 0, Symbol.sKey);
 		if(0 < m_ctrlSearch.GetWindowText(Symbol.sKey))
 		{
 			CDiaInfo info;
