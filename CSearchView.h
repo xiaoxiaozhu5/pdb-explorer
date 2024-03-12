@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_map>
+
 extern "C" {
 	#include "fzf/fzf.h"
 }
@@ -18,6 +20,7 @@ public:
 	CContainedWindowT<CEdit> m_search;
     CPdbCollector* m_symbols;
 	std::vector<int> m_filtered_index;
+	std::unordered_map<std::wstring, std::vector<int>> m_search_filter;
 
 	struct task
     {
@@ -168,6 +171,8 @@ public:
     {
         m_search.Clear();
 		m_list.DeleteAllItems();
+		m_search_filter.clear();
+		m_filtered_index.clear();
 		m_symbols = collector;
         //while(m_list.DeleteString(0));
     }
@@ -193,8 +198,9 @@ public:
 					}
 
 					if (IsAborted()) Abort();
+				    m_search_filter.clear();
 					m_filtered_index.clear();
-					m_list.SetItemCount(tmp_symbols.GetCount());
+					m_list.SetItemCountEx(tmp_symbols.GetCount(), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
 					bFinish = TRUE;
 				}
 				continue;
@@ -209,26 +215,63 @@ public:
 			auto task = tasks_.pop_front();
 			if(task.text.IsEmpty())
 			{
+				m_search_filter.clear();
 				m_filtered_index.clear();
 				m_list.DeleteAllItems();
 				if (IsAborted()) Abort();
-				m_list.SetItemCount(tmp_symbols.GetCount());
+				m_list.SetItemCountEx(tmp_symbols.GetCount(), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
 				continue;
 			}
-
+																				
 			m_list.DeleteAllItems();
 			std::vector<int> filtered_index;
-			for(size_t i = 0; i < tmp_symbols.GetCount(); ++i)
+			if(m_search_filter.empty())
 			{
-				fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
-				int score = fzf_get_score(CStringA(tmp_symbols[i].sKey).GetString(), fzf_pattern, fzf_flab);
-				if (score > 0)
+				for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
 				{
-					filtered_index.push_back(i);
+					fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+					int score = fzf_get_score(CStringA(tmp_symbols[i].sKey).GetString(), fzf_pattern, fzf_flab);
+					if (score > 0)
+					{
+						filtered_index.push_back(i);
+					}
+					fzf_free_pattern(fzf_pattern);
 				}
-				fzf_free_pattern(fzf_pattern);
+				m_search_filter.insert(std::make_pair((LPCTSTR)task.text, filtered_index));
 			}
-			m_list.SetItemCount(filtered_index.size());
+			else
+			{
+				auto find_item = m_search_filter.find((LPCTSTR)task.text);
+				if(find_item == m_search_filter.end())
+				{
+					for (size_t i = 0; i < m_filtered_index.size(); ++i)
+					{
+						fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+						int score = fzf_get_score(CStringA(tmp_symbols[m_filtered_index[i]].sKey).GetString(), fzf_pattern, fzf_flab);
+						if (score > 0)
+						{
+							filtered_index.push_back(i);
+						}
+						fzf_free_pattern(fzf_pattern);
+					}
+					m_search_filter.insert(std::make_pair((LPCTSTR)task.text, filtered_index));
+				}
+				else
+				{
+					auto& findex = find_item->second;
+					for (size_t i = 0; i < findex.size(); ++i)
+					{
+						fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+						int score = fzf_get_score(CStringA(tmp_symbols[findex[i]].sKey).GetString(), fzf_pattern, fzf_flab);
+						if (score > 0)
+						{
+							filtered_index.push_back(i);
+						}
+						fzf_free_pattern(fzf_pattern);
+					}
+				}
+			}
+			m_list.SetItemCountEx(filtered_index.size(), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
 			m_filtered_index.swap(filtered_index);
         }
 		fzf_free_slab(fzf_flab);
