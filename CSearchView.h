@@ -241,7 +241,7 @@ public:
 			}
 			else
 			{
-				auto find_item = m_search_filter.find((LPCTSTR)task.text);
+				auto& find_item = m_search_filter.find((LPCTSTR)task.text);
 				if(find_item == m_search_filter.end())
 				{
 					for (size_t i = 0; i < m_filtered_index.size(); ++i)
@@ -250,7 +250,7 @@ public:
 						int score = fzf_get_score(CStringA(tmp_symbols[m_filtered_index[i]].sKey).GetString(), fzf_pattern, fzf_flab);
 						if (score > 0)
 						{
-							filtered_index.push_back(i);
+							filtered_index.push_back(m_filtered_index[i]);
 						}
 						fzf_free_pattern(fzf_pattern);
 					}
@@ -261,13 +261,7 @@ public:
 					auto& findex = find_item->second;
 					for (size_t i = 0; i < findex.size(); ++i)
 					{
-						fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
-						int score = fzf_get_score(CStringA(tmp_symbols[findex[i]].sKey).GetString(), fzf_pattern, fzf_flab);
-						if (score > 0)
-						{
-							filtered_index.push_back(i);
-						}
-						fzf_free_pattern(fzf_pattern);
+						filtered_index.push_back(i);
 					}
 				}
 			}
