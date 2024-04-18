@@ -8,6 +8,7 @@ View structures in PDB(Program Data Base) file
 - View while loading
 - Keyword highlight
 - Navigate between structures
+- Fuzzy search
 
 ## Prerequisites
 This tool use [DIA SDK](https://learn.microsoft.com/en-us/visualstudio/debugger/debug-interface-access/debug-interface-access-sdk?view=vs-2022) to get PDB info.So first need DIA SDK installed
@@ -30,6 +31,7 @@ msbuild -m PdbExplorer.sln /p:Configuration=Release,Platform=Win32,DebugSymbols=
 <img src="./doc/img/enum.png" />
 <img src="./doc/img/typedef.png" />
 <img src="./doc/img/udt.png" />
+<img src="./doc/img/search.png" />
 
 ## References
 - [viksoe.dk - PDB Explorer](https://www.viksoe.dk/code/pdbexplorer.htm)
