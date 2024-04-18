@@ -54,7 +54,7 @@ public:
 
 	// Operations
 
-	BOOL Create(LPTHREAD_START_ROUTINE pThreadProc, LPVOID pParam = NULL, int iPriority = THREAD_PRIORITY_NORMAL)
+	BOOL CreateT(LPTHREAD_START_ROUTINE pThreadProc, LPVOID pParam = NULL, int iPriority = THREAD_PRIORITY_NORMAL)
 	{
 		_ASSERTE(m_hThread==NULL);
 		_ASSERTE(pThreadProc);
@@ -83,13 +83,13 @@ public:
 		return TRUE;
 	}
 
-	void Attach(HANDLE hThread)
+	void AttachT(HANDLE hThread)
 	{
 		_ASSERTE(m_hThread==NULL);
 		m_hThread = hThread;
 	}
 
-	HANDLE Detach()
+	HANDLE DetachT()
 	{
 		HANDLE hThread = m_hThread;
 		m_hThread = NULL;
@@ -271,7 +271,7 @@ public:
 	BOOL Start()
 	{
 		if (!_ClearAbort()) return FALSE;
-		if (!Create(ThreadProc, (LPVOID)static_cast<T*>(this))) return FALSE;
+		if (!CreateT(ThreadProc, (LPVOID)static_cast<T*>(this))) return FALSE;
 		return TRUE;
 	}
 

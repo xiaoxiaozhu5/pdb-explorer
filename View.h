@@ -77,8 +77,8 @@ public:
 		m_collector.Init(m_hWnd, pstrFilename);
 		m_collector.Start();
 
-		m_ctrlSearch.Abort();
-		m_ctrlSearch.Stop();
+		//m_ctrlSearch.Abort();
+		//m_ctrlSearch.Stop();
 		m_ctrlSearch.SetDataSource(&m_collector);
 		m_ctrlSearch.Start();
 
@@ -117,6 +117,7 @@ public:
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
 		MESSAGE_HANDLER(WM_USER_LOAD_START, OnAnimStart)
 		MESSAGE_HANDLER(WM_USER_LOAD_END, OnAnimEnd)
+		MESSAGE_HANDLER(WM_SHOW_ITEM, OnShowItem)
 		NOTIFY_CODE_HANDLER(NM_DBLCLK, OnSelChanged)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
 		NOTIFY_CODE_HANDLER(EN_LINK, OnLink)
@@ -143,8 +144,7 @@ public:
 			              ES_SAVESEL | ES_SELECTIONBAR | ES_READONLY, 
 			0,IDC_TREE);
 		m_ctrlView.LimitText();
-		m_ctrlSearch.Create(WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT, rcDefault, m_hWnd, 0);
-		//m_ctrlSearch.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE | WS_VSCROLL | WS_HSCROLL | CBS_NOINTEGRALHEIGHT);
+		m_ctrlSearch.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE);
 		m_ctrlContainer.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		m_ctrlContainer.AddItem(m_ctrlList->m_hWnd);
 		m_ctrlContainer.AddItem(m_ctrlSearch);
@@ -202,6 +202,17 @@ public:
 		CString st;
 		st.Format(s, m_lLastSize);
 		::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
+		return 0;
+	}
+
+	LRESULT OnShowItem(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+	{
+		CDiaInfo info;
+		PDBSYMBOL symbol;
+		symbol.dwSymTag = (DWORD)wParam;
+		symbol.sKey = (LPCTSTR)lParam;
+		auto sRTF = info.GetSymbolInfo(m_path, symbol);
+		m_ctrlView.Load(sRTF);
 		return 0;
 	}
 
@@ -292,6 +303,8 @@ public:
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
 		const PDBSYMBOL& Symbol = m_collector.m_aSymbols[pItem->iItem];
 		pItem->pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+		//StringCchPrintf(pItem->pszText,
+		//pItem->cchTextMax, _T("%d %s"), pItem->iItem, (LPCTSTR)Symbol.sKey);
 		bHandled = TRUE;
 		return 0;
 	}
@@ -339,7 +352,7 @@ public:
 		return 0;
 	}
 
-	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& bHandled)
 	{
 		PDBSYMBOL Symbol{};
 		if(0 < m_ctrlSearch.GetWindowText(Symbol.sKey))

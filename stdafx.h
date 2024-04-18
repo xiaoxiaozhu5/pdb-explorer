@@ -44,5 +44,6 @@ extern CAppModule _Module;
 
 #define WM_SET_STATUS_TEXT (WM_USER + 1)
 #define WM_ADD_HISTORY     (WM_USER + 2)
+#define WM_SHOW_ITEM	   (WM_USER + 3)
 
 
