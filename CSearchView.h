@@ -20,11 +20,11 @@ public:
 	CContainedWindowT<CEdit> m_search;
     CPdbCollector* m_symbols;
 	std::vector<int> m_filtered_index;
-	std::unordered_map<std::wstring, std::vector<int>> m_search_filter;
+	std::unordered_map<std::string, std::vector<int>> m_search_filter;
 
 	struct task
     {
-	    CString text;
+		std::string text;
     };
 	tsqueue<task> tasks_;
 
@@ -108,7 +108,8 @@ public:
 		m_search.Invalidate(TRUE);
 		CString str;
 		int nLength = m_search.GetWindowText(str);
-		tasks_.push_back({str});
+		CT2CA pszConvertedAnsiString (str);
+		tasks_.push_back({pszConvertedAnsiString});
 
 		bHandled = FALSE;
 		return 0;
@@ -213,7 +214,7 @@ public:
 			}
 
 			auto task = tasks_.pop_front();
-			if(task.text.IsEmpty())
+			if(task.text.empty())
 			{
 				m_search_filter.clear();
 				m_filtered_index.clear();
@@ -229,7 +230,7 @@ public:
 			{
 				for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
 				{
-					fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+					fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(task.text.c_str()), true);
 					int score = fzf_get_score(CStringA(tmp_symbols[i].sKey).GetString(), fzf_pattern, fzf_flab);
 					if (score > 0)
 					{
@@ -237,16 +238,16 @@ public:
 					}
 					fzf_free_pattern(fzf_pattern);
 				}
-				m_search_filter.insert(std::make_pair((LPCTSTR)task.text, filtered_index));
+				m_search_filter.insert(std::make_pair(task.text, filtered_index));
 			}
 			else
 			{
-				auto& find_item = m_search_filter.find((LPCTSTR)task.text);
+				auto& find_item = m_search_filter.find(task.text);
 				if(find_item == m_search_filter.end())
 				{
 					for (size_t i = 0; i < m_filtered_index.size(); ++i)
 					{
-						fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(CStringA(task.text).GetString()), true);
+						fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(task.text.c_str()), true);
 						int score = fzf_get_score(CStringA(tmp_symbols[m_filtered_index[i]].sKey).GetString(), fzf_pattern, fzf_flab);
 						if (score > 0)
 						{
@@ -254,7 +255,7 @@ public:
 						}
 						fzf_free_pattern(fzf_pattern);
 					}
-					m_search_filter.insert(std::make_pair((LPCTSTR)task.text, filtered_index));
+					m_search_filter.insert(std::make_pair(task.text, filtered_index));
 				}
 				else
 				{
