@@ -56,7 +56,9 @@ public:
 			{
 				CComBSTR bstrName;
 				symbol->get_name(&bstrName);
-				if (CString(bstrName.m_str) == Symbol.sKey)
+				_bstr_t tmp(bstrName);
+				char* tmp_str = (char*)tmp;
+				if (tmp_str == Symbol.sKey)
 				{
 					bFind = true;
 					break;
@@ -82,7 +84,9 @@ public:
 				{
 					CComBSTR bstrName;
 					symbol->get_name(&bstrName);
-					if (CString(bstrName.m_str) == Symbol.sKey)
+				    _bstr_t tmp(bstrName);
+				    char* tmp_str = (char*)tmp;
+					if (tmp_str == Symbol.sKey)
 					{
 						bFind = true;
 						break;

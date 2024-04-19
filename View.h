@@ -17,13 +17,14 @@ enum
 
 namespace 
 {
-    CString ValidateName(LPCTSTR szName)
+    std::string ValidateName(LPCTSTR szName)
     {
         CString tmp(szName);
         tmp.Replace(TEXT("&amp;"), TEXT("&"));
         tmp.Replace(TEXT("&lt;"), TEXT("<"));
         tmp.Replace(TEXT("&gt;"), TEXT(">"));
-        return tmp;
+		CT2CA szaName(tmp);
+        return szaName;
     }
 }
 
@@ -53,7 +54,7 @@ public:
 	CPdbCollector m_collector;
 	SIZE_T m_lLastSize;
 	//CRgn m_rgnWaitAnim;
-	CString m_currentIndex;
+	std::string m_currentIndex;
 
 	BOOL PreTranslateMessage(MSG* pMsg)
 	{
@@ -86,7 +87,7 @@ public:
 		SetTimer(TIMERID_POPULATE, TIMER_START_INTERVAL);
 	}
 
-	void ShowSymbol(const CString& id)
+	void ShowSymbol(const std::string& id)
 	{
 		CDiaInfo info;
 		PDBSYMBOL Symbol;
@@ -210,7 +211,7 @@ public:
 		CDiaInfo info;
 		PDBSYMBOL symbol;
 		symbol.dwSymTag = (DWORD)wParam;
-		symbol.sKey = (LPCTSTR)lParam;
+		symbol.sKey = (LPCSTR)lParam;
 		auto sRTF = info.GetSymbolInfo(m_path, symbol);
 		m_ctrlView.Load(sRTF);
 		return 0;
@@ -227,7 +228,7 @@ public:
 		PDBSYMBOL Symbol = m_collector.m_aSymbols[pDetails->iItem];
 		sRTF = info.GetSymbolInfo(m_path, Symbol);
 		m_currentIndex = Symbol.sKey;
-		::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
+		::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.c_str(), 0);
 
 
 #if 0
@@ -302,7 +303,10 @@ public:
 
 		CComCritSecLock<CComCriticalSection> lock(m_collector.m_lock);
 		const PDBSYMBOL& Symbol = m_collector.m_aSymbols[pItem->iItem];
-		pItem->pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+		//CA2W wstr(Symbol.sKey.c_str());
+		//pItem->pszText = wstr;
+		StringCchPrintf(pItem->pszText,
+		pItem->cchTextMax, _T("%S"), Symbol.sKey.c_str());
 		//StringCchPrintf(pItem->pszText,
 		//pItem->cchTextMax, _T("%d %s"), pItem->iItem, (LPCTSTR)Symbol.sKey);
 		bHandled = TRUE;
@@ -329,7 +333,7 @@ public:
 					Symbol.sKey=ValidateName(url);
 					CString sRTF = info.GetSymbolInfo(m_path, Symbol);
 					m_currentIndex = Symbol.sKey;
-					::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.AllocSysString(), 0);
+					::SendMessage(GetParent(), WM_ADD_HISTORY, (WPARAM)Symbol.sKey.c_str(), 0);
 					m_ctrlView.Load(sRTF);
 				}
 			}
@@ -354,9 +358,12 @@ public:
 
 	LRESULT OnOk(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& bHandled)
 	{
+		CString tmp;
 		PDBSYMBOL Symbol{};
-		if(0 < m_ctrlSearch.GetWindowText(Symbol.sKey))
+		if(0 < m_ctrlSearch.GetWindowText(tmp))
 		{
+			CT2CA tmpa(tmp);
+			Symbol.sKey = tmpa;
 			CDiaInfo info;
 			auto sRTF = info.GetSymbolInfo(m_path, Symbol);
 			m_ctrlView.Load(sRTF);

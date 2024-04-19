@@ -124,8 +124,11 @@ public:
 			if(m_filtered_index.empty())
 			{
 				const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[pDetails->item.iItem];
-				pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+			    //CA2W wstr(Symbol.sKey.c_str());
+				//pDetails->item.pszText = wstr;
 				pDetails->item.iSubItem = Symbol.dwSymTag;
+				StringCchPrintf(pDetails->item.pszText,
+					pDetails->item.cchTextMax, _T("%S"), Symbol.sKey.c_str());
 				//StringCchPrintf(pDetails->item.pszText,
 				//	pDetails->item.cchTextMax, _T("%d %s"), pDetails->item.iItem, (LPCTSTR)Symbol.sKey);
 			}
@@ -133,8 +136,11 @@ public:
 			{
 				auto index = m_filtered_index[pDetails->item.iItem];
 				const PDBSYMBOL& Symbol = m_symbols->m_aSymbols[index];
-				pDetails->item.pszText = const_cast<LPTSTR>((LPCTSTR)Symbol.sKey);
+			    //CA2W wstr(Symbol.sKey.c_str());
+				//pDetails->item.pszText = wstr;
 				pDetails->item.iSubItem = Symbol.dwSymTag;
+				StringCchPrintf(pDetails->item.pszText,
+					pDetails->item.cchTextMax, _T("%S"), Symbol.sKey.c_str());
 				//StringCchPrintf(pDetails->item.pszText,
 				//	pDetails->item.cchTextMax, _T("%d %s"), index, (LPCTSTR)Symbol.sKey);
 			}
@@ -164,7 +170,8 @@ public:
 		CString text;
 		NM_LISTVIEW* pDetails = reinterpret_cast<NM_LISTVIEW*>(pnmh);
 		m_list.GetItemText(pDetails->iItem, 0, text);
-		::SendMessage(GetParent(), WM_SHOW_ITEM, pDetails->iSubItem, (LPARAM)(LPCTSTR)text);
+		CT2CA atext(text);
+		::SendMessage(GetParent(), WM_SHOW_ITEM, pDetails->iSubItem, (LPARAM)(LPCSTR)atext);
 		return 0;
 	}
 
@@ -218,20 +225,24 @@ public:
 			{
 				m_search_filter.clear();
 				m_filtered_index.clear();
+			    m_list.SetRedraw(FALSE);
 				m_list.DeleteAllItems();
+			    m_list.SetRedraw(TRUE);
 				if (IsAborted()) Abort();
 				m_list.SetItemCountEx(tmp_symbols.GetCount(), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
 				continue;
 			}
-																				
+			
+			m_list.SetRedraw(FALSE);
 			m_list.DeleteAllItems();
+			m_list.SetRedraw(TRUE);
 			std::vector<int> filtered_index;
 			if(m_search_filter.empty())
 			{
 				for (size_t i = 0; i < tmp_symbols.GetCount(); ++i)
 				{
 					fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(task.text.c_str()), true);
-					int score = fzf_get_score(CStringA(tmp_symbols[i].sKey).GetString(), fzf_pattern, fzf_flab);
+					int score = fzf_get_score(tmp_symbols[i].sKey.c_str(), fzf_pattern, fzf_flab);
 					if (score > 0)
 					{
 						filtered_index.push_back(i);
@@ -248,7 +259,7 @@ public:
 					for (size_t i = 0; i < m_filtered_index.size(); ++i)
 					{
 						fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, const_cast<char*>(task.text.c_str()), true);
-						int score = fzf_get_score(CStringA(tmp_symbols[m_filtered_index[i]].sKey).GetString(), fzf_pattern, fzf_flab);
+						int score = fzf_get_score(tmp_symbols[m_filtered_index[i]].sKey.c_str(), fzf_pattern, fzf_flab);
 						if (score > 0)
 						{
 							filtered_index.push_back(m_filtered_index[i]);

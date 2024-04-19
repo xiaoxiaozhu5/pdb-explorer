@@ -17,8 +17,8 @@ public:
 	CCommandBarCtrl m_CmdBar;
 	CRibbonRecentItemsCtrl<ID_RIBBON_RECENT_FILES> m_mru;
 
-	std::stack<CString> m_QueBack;
-	std::stack<CString> m_QueNext;
+	std::stack<std::string> m_QueBack;
+	std::stack<std::string> m_QueNext;
 
 	BOOL PreTranslateMessage(MSG* pMsg)
 	{
@@ -205,7 +205,7 @@ public:
 	{
 		if (!m_QueBack.empty())
 		{
-			CString id = m_QueBack.top();
+			std::string id = m_QueBack.top();
 			if(id == m_view.m_currentIndex)
 			{
 				m_QueBack.pop();
@@ -225,7 +225,7 @@ public:
 	{
 		if (!m_QueNext.empty())
 		{
-			CString id = m_QueNext.top();
+			std::string id = m_QueNext.top();
 			if(id == m_view.m_currentIndex)
 			{
 				m_QueNext.pop();
@@ -308,8 +308,7 @@ public:
 
 	LRESULT OnAddHistory(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 	{
-		m_QueBack.push((BSTR)wParam);
-		SysFreeString((BSTR)wParam);
+		m_QueBack.push((char*)wParam);
 		return 0;
 	}
 

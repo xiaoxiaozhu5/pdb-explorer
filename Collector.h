@@ -2,7 +2,11 @@
 #include <functional>
 #include <unordered_set>
 
+#include <comutil.h>
+
 #include "SymWrap.h"
+
+#pragma comment(lib, "comsuppw.lib")
 
 class CPdbCollector;
 typedef BOOL (*EnumProc)(IDiaSymbol* curSym, PVOID param);
@@ -10,7 +14,7 @@ typedef BOOL (*EnumProc)(IDiaSymbol* curSym, PVOID param);
 
 typedef struct tagPDBSYMBOL
 {
-	CString sKey;
+	std::string sKey;
 	DWORD dwSymId;
 	DWORD dwAddrSect;
 	DWORD dwAddrOffset;
@@ -138,8 +142,8 @@ BOOL _ProcessUDT(IDiaSymbol* sym, LPVOID param)
 		sym->get_addressSection(&dwAddrSect);
 		sym->get_addressOffset(&dwAddrOffset);
 
-		CString sKey;
-		sKey.Format(_T("%ls"), bstrName);
+		_bstr_t tmp(bstrName);
+		std::string sKey((char*)tmp);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagUDT, 0 };
 		This->m_aSymbols.Add(Info);
@@ -164,8 +168,8 @@ BOOL _ProcessEnum(IDiaSymbol* sym, LPVOID param)
 		sym->get_addressSection(&dwAddrSect);
 		sym->get_addressOffset(&dwAddrOffset);
 
-		CString sKey;
-		sKey.Format(_T("%ls"), bstrName);
+		_bstr_t tmp(bstrName);
+		std::string sKey((char*)tmp);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagEnum, 0 };
 		This->m_aSymbols.Add(Info);
@@ -190,8 +194,8 @@ BOOL _ProcessTypedef(IDiaSymbol* sym, LPVOID param)
 		sym->get_addressSection(&dwAddrSect);
 		sym->get_addressOffset(&dwAddrOffset);
 
-		CString sKey;
-		sKey.Format(_T("%ls"), bstrName);
+		_bstr_t tmp(bstrName);
+		std::string sKey((char*)tmp);
 		CComCritSecLock<CComCriticalSection> lock(This->m_lock);
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagTypedef, 0 };
 		This->m_aSymbols.Add(Info);
