@@ -1,5 +1,8 @@
 #pragma once
 #include <unordered_map>
+#include <iterator>
+#include <algorithm>
+#include <map>
 
 extern "C" {
 	#include "fzf/fzf.h"
@@ -8,6 +11,17 @@ extern "C" {
 #include <strsafe.h>
 
 #include "tsqueue.h"
+
+template <typename K, typename V>
+std::size_t flatten(std::multimap<K,V,std::greater<V>>& m, std::vector<V>& v)
+{
+    v.clear();
+    v.reserve(m.size());
+    std::transform(m.begin(), m.end(),
+                   std::back_inserter(v),
+                   std::bind(&std::multimap<K,V,std::greater<V>>::value_type::second, std::placeholders::_1));
+    return v.size();
+}
 
 class CSearchView : public CWindowImpl<CSearchView>,
 					public CThreadImpl<CSearchView>
@@ -236,6 +250,7 @@ public:
 			m_list.SetRedraw(FALSE);
 			m_list.DeleteAllItems();
 			m_list.SetRedraw(TRUE);
+			std::multimap<int, int, std::greater<int>> score_index_map;
 			std::vector<int> filtered_index;
 			if(m_search_filter.empty())
 			{
@@ -245,10 +260,11 @@ public:
 					int score = fzf_get_score(tmp_symbols[i].sKey.c_str(), fzf_pattern, fzf_flab);
 					if (score > 0)
 					{
-						filtered_index.push_back(i);
+						score_index_map.insert({score, i});
 					}
 					fzf_free_pattern(fzf_pattern);
 				}
+				flatten(score_index_map, filtered_index);
 				m_search_filter.insert(std::make_pair(task.text, filtered_index));
 			}
 			else
@@ -262,10 +278,11 @@ public:
 						int score = fzf_get_score(tmp_symbols[m_filtered_index[i]].sKey.c_str(), fzf_pattern, fzf_flab);
 						if (score > 0)
 						{
-							filtered_index.push_back(m_filtered_index[i]);
+						    score_index_map.insert({score, m_filtered_index[i]});
 						}
 						fzf_free_pattern(fzf_pattern);
 					}
+				    flatten(score_index_map, filtered_index);
 					m_search_filter.insert(std::make_pair(task.text, filtered_index));
 				}
 				else
