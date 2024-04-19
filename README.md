@@ -5,7 +5,6 @@ View structures in PDB(Program Data Base) file
 ## Feature
 - View UDT,ENUM,TYPEDEF 
 - View large PDB files
-- View while loading
 - Keyword highlight
 - Navigate between structures
 - Fuzzy search
