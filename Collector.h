@@ -40,11 +40,17 @@ public:
 	IDiaSymbol* m_global_sym = NULL;
 	IDiaSession* m_session = NULL;
 	CAtlArray<PDBSYMBOL> m_aSymbols;
+	int m_cnt_udt;
+	int m_cnt_typedef;
+	int m_cnt_enum;
 	volatile bool m_bDone;
 	std::unordered_set<std::wstring> m_dupSet;
 
 		CPdbCollector() : m_hWnd(NULL), m_bDone(false)
 	{
+			m_cnt_udt = 0;
+			m_cnt_typedef = 0;
+			m_cnt_enum = 0;
 	}
 
 	void Init(HWND hWnd, LPCTSTR pstrFilename)
@@ -55,6 +61,9 @@ public:
 		m_hWnd = hWnd;
 		m_bDone = false;
 		m_dupSet.clear();
+		m_cnt_enum = 0;
+		m_cnt_typedef = 0;
+		m_cnt_udt = 0;
 	}
 
 	DWORD Run()
@@ -148,6 +157,7 @@ BOOL _ProcessUDT(IDiaSymbol* sym, LPVOID param)
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagUDT, 0 };
 		This->m_aSymbols.Add(Info);
 		This->m_dupSet.insert(bstrName.m_str);
+		This->m_cnt_udt++;
 		if (This->IsAborted()) throw 1;
 	}
 
@@ -174,6 +184,7 @@ BOOL _ProcessEnum(IDiaSymbol* sym, LPVOID param)
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagEnum, 0 };
 		This->m_aSymbols.Add(Info);
 		This->m_dupSet.insert(bstrName.m_str);
+		This->m_cnt_enum++;
 		if (This->IsAborted()) throw 1;
 	}
 
@@ -200,6 +211,7 @@ BOOL _ProcessTypedef(IDiaSymbol* sym, LPVOID param)
 		PDBSYMBOL Info = { sKey, id, dwAddrSect, dwAddrOffset, SymTagTypedef, 0 };
 		This->m_aSymbols.Add(Info);
 		This->m_dupSet.insert(bstrName.m_str);
+		This->m_cnt_typedef++;
 		if (This->IsAborted()) throw 1;
 	}
 

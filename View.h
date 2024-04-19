@@ -381,38 +381,8 @@ public:
 
 	void _PopulateTree()
 	{
-		//DWORD dwStartTick = ::GetTickCount();
-		SIZE_T iIndex;
-		int cnt_udf = 0, cnt_enum = 0, cnt_typedef = 0;
-		for (iIndex = 0; iIndex < m_collector.m_aSymbols.GetCount(); iIndex++)
-		{
-			const PDBSYMBOL& Symbol = m_collector.m_aSymbols[iIndex];
-			switch (Symbol.dwSymTag)
-			{
-			case SymTagUDT:
-				cnt_udf++;
-				break;
-			case SymTagEnum:
-				cnt_enum++;
-				break;
-			case SymTagTypedef:
-				cnt_typedef++;
-				break;
-			default:
-				break;
-			}
-
-			//if (::GetTickCount() - dwStartTick > TIMER_WORK_INTERVAL)
-			//{
-			//	CString s, st;
-			//	s.LoadString(IDS_PROCESSING_SYMBOL);
-			//	st.Format(s, iIndex, m_collector.m_aSymbols.GetCount(), Symbol.sKey);
-			//	::SendMessage(GetParent(), WM_SET_STATUS_TEXT, 0, (LPARAM)(LPCTSTR)st);
-			//	break;
-			//}
-		}
 		m_lLastSize = m_collector.m_aSymbols.GetCount();
-		m_ctrlList->InsertGroups(cnt_udf, cnt_enum, cnt_typedef);
+		m_ctrlList->InsertGroups(m_collector.m_cnt_udt, m_collector.m_cnt_enum, m_collector.m_cnt_typedef);
 		m_ctrlList->SetItemCount(m_collector.m_aSymbols.GetCount());
 	}
 };
