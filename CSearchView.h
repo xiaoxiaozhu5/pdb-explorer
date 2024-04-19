@@ -261,7 +261,7 @@ public:
 					auto& findex = find_item->second;
 					for (size_t i = 0; i < findex.size(); ++i)
 					{
-						filtered_index.push_back(i);
+						filtered_index.push_back(findex[i]);
 					}
 				}
 			}
