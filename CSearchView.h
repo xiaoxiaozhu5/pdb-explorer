@@ -24,12 +24,14 @@ std::size_t flatten(std::multimap<K,V,std::greater<V>>& m, std::vector<V>& v)
 }
 
 class CSearchView : public CWindowImpl<CSearchView>,
-					public CThreadImpl<CSearchView>
+					public CThreadImpl<CSearchView>,
+					public CCustomDraw<CSearchView>
 {
 public:
     DECLARE_WND_CLASS(_T("WTL_SearchView"))
 
 	CFont m_font;
+	CFont m_font_bold;
     CContainedWindowT<CListViewCtrl> m_list;
 	CContainedWindowT<CEdit> m_search;
     CPdbCollector* m_symbols;
@@ -57,6 +59,20 @@ public:
 			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Tahoma"));
 		}
 		m_font.CreateFontIndirect(&lf);
+
+
+		lf.lfWeight = FW_BOLD;
+		if(RunTimeHelper::IsVista())
+		{
+			lf.SetHeight(9);
+			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Consolas"));
+		}
+		else
+		{
+			lf.SetHeight(8);
+			SecureHelper::strcpy_x(lf.lfFaceName, LF_FACESIZE, _T("Tahoma"));
+		}
+		m_font_bold.CreateFontIndirect(&lf);
 	}
 
 	BEGIN_MSG_MAP(CSearchView)
@@ -66,6 +82,7 @@ public:
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnEditChange)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnTvnGetdispinfoTree)
 		NOTIFY_CODE_HANDLER(NM_DBLCLK, OnSelChanged)
+		CHAIN_MSG_MAP( CCustomDraw<CSearchView> )
 		ALT_MSG_MAP(1)
         MESSAGE_HANDLER(WM_KEYDOWN, OnKeyDown)
         //MESSAGE_HANDLER(WM_LBUTTONDBLCLK, OnListLButtonDblClk)
@@ -187,6 +204,96 @@ public:
 		CT2CA atext(text);
 		::SendMessage(GetParent(), WM_SHOW_ITEM, pDetails->iSubItem, (LPARAM)(LPCSTR)atext);
 		return 0;
+	}
+
+	DWORD OnPreErase(int /*idCtrl*/, LPNMCUSTOMDRAW /*lpNMCustomDraw*/)
+	{
+		return CDRF_SKIPDEFAULT;
+	}
+
+	DWORD OnPrePaint(int /*idCtrl*/, LPNMCUSTOMDRAW /*lpNMCustomDraw*/)
+	{
+		return CDRF_NOTIFYITEMDRAW;
+	}
+
+	DWORD OnItemPrePaint(int /*idCtrl*/, LPNMCUSTOMDRAW lpNMCustomDraw)
+	{
+		LPNMTBCUSTOMDRAW lpNMTBCD = reinterpret_cast<LPNMTBCUSTOMDRAW>(lpNMCustomDraw);
+		CDCHandle dc = lpNMTBCD->nmcd.hdc;
+
+		DWORD row = lpNMTBCD->nmcd.dwItemSpec;
+		bool bIsFocus = (lpNMCustomDraw->uItemState & CDIS_FOCUS) != 0;
+
+		// Draw Selected item Background
+		CPen pen;
+		CBrush brush;
+		pen.CreatePen(PS_DOT, 1, RGB(0, 0, 0));
+		if(bIsFocus)
+			brush.CreateSolidBrush(::GetSysColor(CTLCOLOR_LISTBOX));
+		else
+			brush.CreateSolidBrush(RGB(255, 255, 255));
+
+		HPEN hOldPen = dc.SelectPen(pen);
+		HBRUSH hOldBrush = dc.SelectBrush(brush);
+		dc.FillRect(&lpNMTBCD->nmcd.rc, brush);
+		dc.SelectBrush(hOldBrush);
+		dc.SelectPen(hOldPen);
+
+		CString text;
+		m_list.GetItemText(row, 0, text);
+
+		const int max_match_index = 512;
+		uint32_t match_idx[max_match_index] = {0};
+		CString input;
+		m_search.GetWindowTextW(input);
+		if(!input.IsEmpty())
+		{
+			CT2CA ainput(input);
+			CT2CA atext(text);
+			fzf_slab_t* fzf_flab = fzf_make_default_slab();
+			fzf_pattern_t* fzf_pattern = fzf_parse_pattern(CaseSmart, false, ainput, true);
+			int score = fzf_get_score(atext, fzf_pattern, fzf_flab);
+			if (score > 0)
+			{
+				fzf_position_t* pos = fzf_get_positions(atext, fzf_pattern, fzf_flab);
+				if (pos)
+				{
+					for (size_t i = 0; i < pos->size; ++i)
+					{
+						match_idx[pos->data[i]] = 1;
+					}
+					fzf_free_positions(pos);
+				}
+			}
+			fzf_free_pattern(fzf_pattern);
+		}
+
+		RECT rect = lpNMTBCD->nmcd.rc;
+		int x = rect.left;
+		SIZE sz;
+		for(int i = 0; i < text.GetLength(); ++i)
+		{
+			TCHAR ch[2] = { text[i], '\0' };
+			if(match_idx[i])
+			{
+				HFONT hOldFont = dc.SelectFont(m_font_bold);
+				dc.DrawTextEx(ch, 1, &rect, DT_LEFT, NULL);
+
+				dc.GetTextExtent(ch, 1, &sz);
+				x += sz.cx;
+				rect.left = x;
+				dc.SelectFont(hOldFont);
+			}
+			else
+			{
+				dc.DrawTextEx(ch, 1, &rect, DT_LEFT, NULL);
+				dc.GetTextExtent(ch, 1, &sz);
+				x += sz.cx;
+				rect.left = x;
+			}
+		}
+
+		return CDRF_SKIPDEFAULT;
 	}
 
     void SetDataSource(CPdbCollector* collector)
