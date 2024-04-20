@@ -78,8 +78,8 @@ public:
 		m_collector.Init(m_hWnd, pstrFilename);
 		m_collector.Start();
 
-		//m_ctrlSearch.Abort();
-		//m_ctrlSearch.Stop();
+		m_ctrlSearch.Abort();
+		m_ctrlSearch.Stop();
 		m_ctrlSearch.SetDataSource(&m_collector);
 		m_ctrlSearch.Start();
 

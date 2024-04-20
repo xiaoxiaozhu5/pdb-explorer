@@ -24,9 +24,6 @@
     <ClCompile Include="SymWrap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="levenshtein.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="fzf\fzf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -69,9 +66,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CSearchView.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="levenshtein.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
